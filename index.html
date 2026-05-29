@@ -3,619 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>HingaTech - Smart Farm Monitoring System</title>
+    <title>HingaTech - Smart Farm Monitoring System (FAST)</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f4f8;
-        }
-
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            display: none;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; }
+        .app-container { display: flex; flex-direction: column; min-height: 100vh; }
+        .sidebar { display: none; }
+        
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 12px 20px;
-            box-shadow: 0 -2px 15px rgba(0,0,0,0.1);
-            z-index: 1000;
-            border-top: 1px solid #e2e8f0;
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 12px 20px; box-shadow: 0 -2px 15px rgba(0,0,0,0.1);
+            z-index: 1000; border-top: 1px solid #e2e8f0;
         }
-
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 12px;
-            transition: all 0.3s;
-            color: #718096;
-            font-size: 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            background: none; border: none; cursor: pointer; padding: 8px 12px;
+            border-radius: 12px; transition: all 0.3s; color: #718096; font-size: 12px;
         }
-
-        .nav-item .icon {
-            font-size: 24px;
-        }
-
-        .nav-item.active {
-            color: #1a5f3a;
-            background: rgba(26, 95, 58, 0.1);
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 15px;
-            padding-bottom: 80px;
-        }
-
+        .nav-item .icon { font-size: 24px; }
+        .nav-item.active { color: #1a5f3a; background: rgba(26, 95, 58, 0.1); }
+        .main-content { flex: 1; padding: 15px; padding-bottom: 80px; }
+        
         .data-stale-warning {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
+            background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px;
+            border-radius: 12px; margin-bottom: 15px; display: flex; align-items: center;
+            gap: 10px; font-size: 13px; animation: blinkWarning 0.5s ease-in-out;
         }
-
         .data-stale-warning.critical {
-            background: #fee2e2;
-            border-left-color: #ef4444;
-            animation: blinkCritical 0.5s ease-in-out infinite;
+            background: #fee2e2; border-left-color: #ef4444;
+            animation: blinkCritical 0.3s ease-in-out infinite;
         }
-
-        @keyframes blinkCritical {
-            0%, 100% { background: #fee2e2; opacity: 1; }
-            50% { background: #fecaca; opacity: 0.8; }
-        }
-
+        @keyframes blinkWarning { 0%,100% { background: #fef3c7; } 50% { background: #fffbeb; } }
+        @keyframes blinkCritical { 0%,100% { background: #fee2e2; } 50% { background: #fecaca; } }
+        
         .top-header {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
-            background: white;
-            padding: 15px;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;
+            background: white; padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
-
-        .page-title h1 {
-            font-size: 20px;
-            color: #1a202c;
-        }
-
-        .page-title p {
-            color: #718096;
-            font-size: 12px;
-            margin-top: 4px;
-        }
-
-        .header-status {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .status-badge.online {
-            background: #4ade80;
-            color: #1a5f3a;
-        }
-
-        .status-badge.offline {
-            background: #ef4444;
-            color: white;
-            animation: pulseRed 1s infinite;
-        }
-
-        @keyframes pulseRed {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .timestamp {
-            font-size: 10px;
-            color: #a0aec0;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 16px;
-            padding: 15px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-
-        .stat-icon {
-            font-size: 32px;
-        }
-
-        .stat-info h3 {
-            font-size: 20px;
-            font-weight: 700;
-            color: #1a5f3a;
-        }
-
-        .stat-info p {
-            font-size: 11px;
-            color: #718096;
-        }
-
-        .stat-info small {
-            font-size: 9px;
-            color: #a0aec0;
-        }
-
-        .sensor-status-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .sensor-status-card {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .sensor-status-card.online {
-            border-left: 4px solid #10b981;
-            background: #f0fdf4;
-        }
-
-        .sensor-status-card.offline {
-            border-left: 4px solid #ef4444;
-            background: #fef2f2;
-            animation: shake 0.5s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        .sensor-status-icon {
-            font-size: 24px;
-        }
-
-        .sensor-status-info h4 {
-            font-size: 13px;
-            margin-bottom: 3px;
-        }
-
-        .sensor-status-info span {
-            font-size: 10px;
-            font-weight: bold;
-        }
-
-        .online-text {
-            color: #10b981;
-        }
-
-        .offline-text {
-            color: #ef4444;
-        }
-
-        .two-columns {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .sensors-section, .chart-section {
-            background: white;
-            border-radius: 20px;
-            padding: 15px;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .section-header h2 {
-            font-size: 16px;
-            color: #1a202c;
-        }
-
-        .sensor-card {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 10px;
-            border-left: 4px solid #1a5f3a;
-        }
-
-        .sensor-metrics {
-            display: flex;
-            justify-content: space-around;
-        }
-
-        .metric-item {
-            text-align: center;
-            flex: 1;
-        }
-
-        .metric-label {
-            font-size: 10px;
-            color: #718096;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .metric-value {
-            font-size: 16px;
-            font-weight: 700;
-        }
-
+        .page-title h1 { font-size: 20px; color: #1a202c; }
+        .page-title p { color: #718096; font-size: 12px; margin-top: 4px; }
+        .header-status { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .status-badge.online { background: #4ade80; color: #1a5f3a; }
+        .status-badge.offline { background: #ef4444; color: white; animation: pulseRed 1s infinite; }
+        .status-badge.warning { background: #f59e0b; color: white; animation: pulseOrange 1s infinite; }
+        @keyframes pulseRed { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes pulseOrange { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .timestamp { font-size: 10px; color: #a0aec0; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 16px; padding: 15px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-icon { font-size: 32px; }
+        .stat-info h3 { font-size: 20px; font-weight: 700; color: #1a5f3a; }
+        .stat-info p { font-size: 11px; color: #718096; }
+        .stat-info small { font-size: 9px; color: #a0aec0; }
+        
+        .sensor-status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .sensor-status-card { background: #f8fafc; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px; transition: all 0.3s ease; }
+        .sensor-status-card.online { border-left: 4px solid #10b981; background: #f0fdf4; }
+        .sensor-status-card.offline { border-left: 4px solid #ef4444; background: #fef2f2; animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+        .sensor-status-icon { font-size: 24px; }
+        .sensor-status-info h4 { font-size: 13px; margin-bottom: 3px; }
+        .sensor-status-info span { font-size: 10px; font-weight: bold; }
+        .online-text { color: #10b981; }
+        .offline-text { color: #ef4444; }
+        
+        .two-columns { display: flex; flex-direction: column; gap: 20px; margin-bottom: 20px; }
+        .sensors-section, .chart-section { background: white; border-radius: 20px; padding: 15px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+        .section-header h2 { font-size: 16px; color: #1a202c; }
+        
+        .sensor-card { background: #f8fafc; border-radius: 12px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #1a5f3a; }
+        .sensor-metrics { display: flex; justify-content: space-around; }
+        .metric-item { text-align: center; flex: 1; }
+        .metric-label { font-size: 10px; color: #718096; display: block; margin-bottom: 5px; }
+        .metric-value { font-size: 16px; font-weight: 700; }
         .temp-normal, .soil-normal, .humidity-normal { color: #10b981; }
         .temp-warning, .soil-warning, .humidity-warning { color: #f59e0b; }
         .temp-critical, .soil-critical, .humidity-critical { color: #ef4444; }
-
-        canvas {
-            max-width: 100%;
-            height: auto;
-        }
-
-        .advice-card {
-            background: linear-gradient(135deg, #1a5f3a 0%, #0d3b22 100%);
-            color: white;
-            border-radius: 20px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .advice-card h3 {
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .advice-content {
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .irrigation-urgent {
-            background: #dc2626;
-            padding: 10px;
-            border-radius: 10px;
-            animation: pulse-bg 1s infinite;
-        }
-
-        @keyframes pulse-bg {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .history-card, .alerts-card {
-            background: white;
-            border-radius: 20px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .card-header h3 {
-            font-size: 15px;
-            color: #1a202c;
-        }
-
-        .history-list, .alerts-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .history-item, .alert-item {
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            font-size: 11px;
-        }
-
-        .history-item {
-            background: #f8fafc;
-            border-left: 3px solid #3b82f6;
-        }
-
-        .alert-item {
-            background: #fef3c7;
-            border-left: 3px solid #f59e0b;
-        }
-
-        .alert-critical {
-            background: #fee2e2;
-            border-left-color: #ef4444;
-        }
-
-        .no-data {
-            text-align: center;
-            padding: 20px;
-            color: #a0aec0;
-            font-size: 13px;
-        }
-
-        .how-it-works {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .how-it-works h2 {
-            margin-bottom: 20px;
-            color: #1a202c;
-            font-size: 18px;
-        }
-
-        .features-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .feature {
-            text-align: center;
-        }
-
-        .feature-icon {
-            font-size: 36px;
-            margin-bottom: 8px;
-        }
-
-        .feature h4 {
-            margin-bottom: 6px;
-            color: #1a5f3a;
-            font-size: 14px;
-        }
-
-        .feature p {
-            font-size: 12px;
-            color: #718096;
-        }
-
-        .sensor-tags {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .sensor-tag {
-            padding: 5px 12px;
-            background: #e2e8f0;
-            border-radius: 20px;
-            font-size: 11px;
-            color: #4a5568;
-        }
-
-        .voice-toggle {
-            position: fixed;
-            bottom: 70px;
-            right: 15px;
-            background: #1a5f3a;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-
-        .live-badge-mobile {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            background: #dc2626;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            z-index: 1000;
-            color: white;
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: #4ade80;
-            border-radius: 50%;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
+        
+        canvas { max-width: 100%; height: auto; }
+        
+        .advice-card { background: linear-gradient(135deg, #1a5f3a 0%, #0d3b22 100%); color: white; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
+        .advice-card h3 { margin-bottom: 10px; font-size: 16px; }
+        .advice-content { font-size: 14px; line-height: 1.4; }
+        .irrigation-urgent { background: #dc2626; padding: 10px; border-radius: 10px; animation: pulse-bg 1s infinite; }
+        @keyframes pulse-bg { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+        
+        .history-card, .alerts-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+        .card-header h3 { font-size: 15px; color: #1a202c; }
+        .history-list, .alerts-list { max-height: 300px; overflow-y: auto; }
+        .history-item, .alert-item { padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 11px; }
+        .history-item { background: #f8fafc; border-left: 3px solid #3b82f6; }
+        .alert-item { background: #fef3c7; border-left: 3px solid #f59e0b; }
+        .alert-critical { background: #fee2e2; border-left-color: #ef4444; }
+        .no-data { text-align: center; padding: 20px; color: #a0aec0; font-size: 13px; }
+        
+        .how-it-works { background: white; border-radius: 20px; padding: 20px; text-align: center; }
+        .how-it-works h2 { margin-bottom: 20px; color: #1a202c; font-size: 18px; }
+        .features-grid { display: flex; flex-direction: column; gap: 20px; margin-bottom: 20px; }
+        .feature { text-align: center; }
+        .feature-icon { font-size: 36px; margin-bottom: 8px; }
+        .feature h4 { margin-bottom: 6px; color: #1a5f3a; font-size: 14px; }
+        .feature p { font-size: 12px; color: #718096; }
+        .sensor-tags { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .sensor-tag { padding: 5px 12px; background: #e2e8f0; border-radius: 20px; font-size: 11px; color: #4a5568; }
+        
+        .voice-toggle { position: fixed; bottom: 70px; right: 15px; background: #1a5f3a; color: white; border: none; padding: 10px 16px; border-radius: 30px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .live-badge-mobile { position: fixed; top: 15px; right: 15px; background: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 6px; z-index: 1000; color: white; }
+        .live-dot { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
         @media (min-width: 768px) {
-            .app-container {
-                flex-direction: row;
-            }
-            .bottom-nav {
-                display: none;
-            }
-            .sidebar {
-                display: block;
-                width: 260px;
-                background: linear-gradient(180deg, #0a2e1a 0%, #1a5f3a 100%);
-                color: white;
-                padding: 20px;
-                position: fixed;
-                height: 100vh;
-                overflow-y: auto;
-            }
-            .main-content {
-                margin-left: 260px;
-                padding: 20px 30px;
-                padding-bottom: 30px;
-            }
-            .top-header {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .stats-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 20px;
-            }
-            .two-columns {
-                flex-direction: row;
-                gap: 25px;
-            }
-            .features-grid {
-                flex-direction: row;
-            }
-            .voice-toggle {
-                bottom: 20px;
-                right: 20px;
-            }
-            .live-badge-mobile {
-                display: none;
-            }
+            .app-container { flex-direction: row; }
+            .bottom-nav { display: none; }
+            .sidebar { display: block; width: 260px; background: linear-gradient(180deg, #0a2e1a 0%, #1a5f3a 100%); color: white; padding: 20px; position: fixed; height: 100vh; overflow-y: auto; }
+            .main-content { margin-left: 260px; padding: 20px 30px; padding-bottom: 30px; }
+            .top-header { flex-direction: row; justify-content: space-between; align-items: center; }
+            .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+            .two-columns { flex-direction: row; gap: 25px; }
+            .features-grid { flex-direction: row; }
+            .voice-toggle { bottom: 20px; right: 20px; }
+            .live-badge-mobile { display: none; }
         }
-
-        .sidebar .logo-area h2 {
-            font-size: 20px;
-            margin-bottom: 5px;
-        }
-        .sidebar .logo-area span {
-            font-size: 11px;
-            opacity: 0.8;
-        }
-        .sidebar .search-box {
-            margin: 20px 0;
-        }
-        .sidebar .search-box input {
-            width: 100%;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.15);
-            color: white;
-            font-size: 13px;
-        }
-        .sidebar .nav-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .sidebar .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 15px;
-            border-radius: 10px;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        .sidebar .nav-item:hover, .sidebar .nav-item.active {
-            background: rgba(255,255,255,0.15);
-        }
-        .sidebar .live-badge {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: #dc2626;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .sidebar .logo-area h2 { font-size: 20px; margin-bottom: 5px; }
+        .sidebar .logo-area span { font-size: 11px; opacity: 0.8; }
+        .sidebar .search-box { margin: 20px 0; }
+        .sidebar .search-box input { width: 100%; padding: 8px 12px; border: none; border-radius: 10px; background: rgba(255,255,255,0.15); color: white; font-size: 13px; }
+        .sidebar .nav-menu { display: flex; flex-direction: column; gap: 5px; }
+        .sidebar .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 15px; border-radius: 10px; color: white; text-decoration: none; transition: all 0.3s; cursor: pointer; }
+        .sidebar .nav-item:hover, .sidebar .nav-item.active { background: rgba(255,255,255,0.15); }
+        .sidebar .live-badge { position: absolute; bottom: 20px; left: 20px; background: #dc2626; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="logo-area">
-                <h2>🌾 HINGA-TECH</h2>
-                <span>Smart Farming</span>
-            </div>
-            <div class="search-box">
-                <input type="text" placeholder="Search readings..." id="searchInput">
-            </div>
+            <div class="logo-area"><h2>🌾 HINGA-TECH</h2><span>Smart Farming</span></div>
+            <div class="search-box"><input type="text" placeholder="Search readings..." id="searchInput"></div>
             <nav class="nav-menu">
                 <a class="nav-item active" onclick="showSection('dashboard')"><span class="icon">🏠</span><span>Dashboard</span></a>
                 <a class="nav-item" onclick="showSection('history')"><span class="icon">📋</span><span>History</span></a>
                 <a class="nav-item" onclick="showSection('alerts')"><span class="icon">🔔</span><span>Alerts Log</span></a>
             </nav>
-            <div class="live-badge"><span class="live-dot"></span>LIVE(2s)</div>
+            <div class="live-badge"><span class="live-dot"></span>LIVE(1s)</div>
         </aside>
 
         <div class="bottom-nav">
@@ -628,22 +162,12 @@
 
         <main class="main-content">
             <header class="top-header">
-                <div class="page-title">
-                    <h1>Smart Farming Dashboard</h1>
-                    <p>Real-time monitoring with smart alerts</p>
-                </div>
-                <div class="header-status">
-                    <span id="connection-status" class="status-badge online">● Online</span>
-                    <span id="last-updated" class="timestamp">Last updated: --:--:--</span>
-                </div>
+                <div class="page-title"><h1>Smart Farming Dashboard</h1><p>Real-time monitoring with FAST detection</p></div>
+                <div class="header-status"><span id="connection-status" class="status-badge online">● Online</span><span id="last-updated" class="timestamp">Last updated: --:--:--</span></div>
             </header>
 
             <div id="stale-warning" style="display:none;" class="data-stale-warning">
-                <span>⚠️</span>
-                <div>
-                    <strong id="stale-message">No data received!</strong><br>
-                    <small id="stale-detail">Checking connection...</small>
-                </div>
+                <span>⚠️</span><div><strong id="stale-message">No data received!</strong><br><small id="stale-detail">Checking connection...</small></div>
             </div>
 
             <div id="dashboardSection">
@@ -655,20 +179,8 @@
                 </div>
 
                 <div class="sensor-status-grid">
-                    <div class="sensor-status-card online" id="dht22-status">
-                        <div class="sensor-status-icon">🌡️</div>
-                        <div class="sensor-status-info">
-                            <h4>DHT22 Sensor</h4>
-                            <span id="dht22-status-text" class="online-text">● Online</span>
-                        </div>
-                    </div>
-                    <div class="sensor-status-card online" id="soil-status">
-                        <div class="sensor-status-icon">🌱</div>
-                        <div class="sensor-status-info">
-                            <h4>Soil Moisture Sensor</h4>
-                            <span id="soil-status-text" class="online-text">● Online</span>
-                        </div>
-                    </div>
+                    <div class="sensor-status-card online" id="dht22-status"><div class="sensor-status-icon">🌡️</div><div class="sensor-status-info"><h4>DHT22 Sensor</h4><span id="dht22-status-text" class="online-text">● Online</span></div></div>
+                    <div class="sensor-status-card online" id="soil-status"><div class="sensor-status-icon">🌱</div><div class="sensor-status-info"><h4>Soil Moisture Sensor</h4><span id="soil-status-text" class="online-text">● Online</span></div></div>
                 </div>
 
                 <div class="two-columns">
@@ -676,25 +188,12 @@
                     <div class="chart-section"><div class="section-header"><h2>📈 Temperature & Humidity History</h2><span>Last 20 readings</span></div><canvas id="sensor-chart"></canvas></div>
                 </div>
 
-                <div class="advice-card" id="advice-card">
-                    <h3>💧 Smart Irrigation Advice</h3>
-                    <div id="advice-container" class="advice-content">Waiting for sensor data...</div>
-                </div>
+                <div class="advice-card" id="advice-card"><h3>💧 Smart Irrigation Advice</h3><div id="advice-container" class="advice-content">Waiting for sensor data...</div></div>
             </div>
 
-            <div id="historySection" style="display:none;">
-                <div class="history-card">
-                    <div class="card-header"><h3>📜 Complete Event History</h3><button onclick="clearHistory()" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">Clear History</button></div>
-                    <div id="full-history-list" class="history-list"><div class="no-data">Loading history...</div></div>
-                </div>
-            </div>
+            <div id="historySection" style="display:none;"><div class="history-card"><div class="card-header"><h3>📜 Complete Event History</h3><button onclick="clearHistory()" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">Clear History</button></div><div id="full-history-list" class="history-list"><div class="no-data">Loading history...</div></div></div></div>
 
-            <div id="alertsSection" style="display:none;">
-                <div class="alerts-card">
-                    <div class="card-header"><h3>🔔 All Alerts Log</h3><button onclick="clearAlerts()" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">Clear Alerts</button></div>
-                    <div id="full-alerts-list" class="alerts-list"><div class="no-data">No alerts yet...</div></div>
-                </div>
-            </div>
+            <div id="alertsSection" style="display:none;"><div class="alerts-card"><div class="card-header"><h3>🔔 All Alerts Log</h3><button onclick="clearAlerts()" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">Clear Alerts</button></div><div id="full-alerts-list" class="alerts-list"><div class="no-data">No alerts yet...</div></div></div></div>
 
             <div class="how-it-works">
                 <h2>How HingaTech Farm Monitor Works</h2>
@@ -720,20 +219,14 @@
         let alertHistory = [];
         let voiceEnabled = true;
         let lastAlertTime = {};
-        
-        // Track if board is actually sending data
         let lastSuccessfulFetch = Date.now();
         let isBoardConnected = true;
         let boardDisconnectAlertSent = false;
         
-        // Track last known GOOD values (not -999)
         let lastGoodDHT22 = { temp: null, humidity: null, lastSeen: null };
         let lastGoodSoil = { moisture: null, lastSeen: null };
-        
-        // Current sensor status based on ACTUAL new data
         let dht22CurrentlyWorking = false;
         let soilCurrentlyWorking = false;
-        let lastValidDataReceived = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             if ("Notification" in window && Notification.permission === "default") {
@@ -748,43 +241,32 @@
             }
         }
 
-        // THIS IS THE KEY FIX - Only update sensor status based on NEW data
         function updateSensorStatusFromNewData(latestReading) {
             const now = Date.now();
             
-            // Check if we have a valid reading (not -999)
             let dhtHasValidData = false;
             let soilHasValidData = false;
             
             if (latestReading) {
-                // Check DHT22 - valid if not -999
                 if (latestReading.temperature !== undefined && latestReading.temperature !== -999 &&
                     latestReading.humidity !== undefined && latestReading.humidity !== -999) {
                     dhtHasValidData = true;
-                    lastGoodDHT22 = {
-                        temp: latestReading.temperature,
-                        humidity: latestReading.humidity,
-                        lastSeen: now
-                    };
+                    lastGoodDHT22 = { temp: latestReading.temperature, humidity: latestReading.humidity, lastSeen: now };
                 }
                 
-                // Check Soil - valid if not -999
                 if (latestReading.soil_moisture !== undefined && latestReading.soil_moisture !== -999 &&
                     latestReading.soil_moisture >= 0 && latestReading.soil_moisture <= 100) {
                     soilHasValidData = true;
-                    lastGoodSoil = {
-                        moisture: latestReading.soil_moisture,
-                        lastSeen: now
-                    };
+                    lastGoodSoil = { moisture: latestReading.soil_moisture, lastSeen: now };
                 }
             }
             
-            // Update DHT22 UI based ONLY on current data
+            // FAST DHT22 Update
             if (dhtHasValidData) {
                 if (!dht22CurrentlyWorking) {
                     dht22CurrentlyWorking = true;
-                    addHistoryEvent('✅ DHT22 sensor is back online (new data received)');
-                    addAlert('✅ DHT22 sensor has recovered and is now working normally', 'info');
+                    addHistoryEvent('✅ DHT22 sensor is back online');
+                    addAlert('✅ DHT22 sensor has recovered', 'info');
                     showNotification('DHT22 Sensor Recovered', 'The temperature sensor is working again!', 'success');
                 }
                 document.getElementById('dht22-status').className = 'sensor-status-card online';
@@ -793,22 +275,22 @@
             } else {
                 if (dht22CurrentlyWorking) {
                     dht22CurrentlyWorking = false;
-                    addHistoryEvent('⚠️ DHT22 sensor stopped responding (no valid data)');
-                    addAlert('⚠️ DHT22 TEMPERATURE SENSOR IS NOT RESPONDING! Please check the wiring.', 'critical');
-                    showNotification('⚠️ SENSOR FAILURE!', 'DHT22 Temperature sensor is not responding. Check the wiring!', 'error');
+                    addHistoryEvent('⚠️ DHT22 sensor stopped responding!');
+                    addAlert('⚠️ DHT22 TEMPERATURE SENSOR IS NOT RESPONDING! Check wiring.', 'critical');
+                    showNotification('⚠️ SENSOR FAILURE!', 'DHT22 sensor is not responding!', 'error');
                 }
                 document.getElementById('dht22-status').className = 'sensor-status-card offline';
                 document.getElementById('dht22-status-text').innerHTML = '● OFFLINE - Not Responding!';
                 document.getElementById('dht22-status-text').className = 'offline-text';
             }
             
-            // Update Soil UI based ONLY on current data
+            // FAST Soil Update
             if (soilHasValidData) {
                 if (!soilCurrentlyWorking) {
                     soilCurrentlyWorking = true;
-                    addHistoryEvent('✅ Soil moisture sensor is back online (new data received)');
-                    addAlert('✅ Soil moisture sensor has recovered and is now working normally', 'info');
-                    showNotification('Soil Sensor Recovered', 'The soil moisture sensor is working again!', 'success');
+                    addHistoryEvent('✅ Soil moisture sensor is back online');
+                    addAlert('✅ Soil moisture sensor has recovered', 'info');
+                    showNotification('Soil Sensor Recovered', 'The soil sensor is working again!', 'success');
                 }
                 document.getElementById('soil-status').className = 'sensor-status-card online';
                 document.getElementById('soil-status-text').innerHTML = '● Online';
@@ -816,66 +298,65 @@
             } else {
                 if (soilCurrentlyWorking) {
                     soilCurrentlyWorking = false;
-                    addHistoryEvent('⚠️ Soil moisture sensor stopped responding (no valid data)');
-                    addAlert('⚠️ SOIL MOISTURE SENSOR IS NOT RESPONDING! Please check the wiring.', 'critical');
-                    showNotification('⚠️ SENSOR FAILURE!', 'Soil moisture sensor is not responding. Check the wiring!', 'error');
+                    addHistoryEvent('⚠️ Soil moisture sensor stopped responding!');
+                    addAlert('⚠️ SOIL MOISTURE SENSOR IS NOT RESPONDING! Check wiring.', 'critical');
+                    showNotification('⚠️ SENSOR FAILURE!', 'Soil sensor is not responding!', 'error');
                 }
                 document.getElementById('soil-status').className = 'sensor-status-card offline';
                 document.getElementById('soil-status-text').innerHTML = '● OFFLINE - Not Responding!';
                 document.getElementById('soil-status-text').className = 'offline-text';
             }
             
-            // Check if board is completely disconnected (no valid data from ANY sensor)
+            // FAST Board disconnect detection
             if (!dhtHasValidData && !soilHasValidData) {
                 if (isBoardConnected) {
                     isBoardConnected = false;
                     if (!boardDisconnectAlertSent) {
                         boardDisconnectAlertSent = true;
-                        addHistoryEvent('🚨 CRITICAL: ESP8266 board is not sending valid data!');
-                        addAlert('⚠️⚠️⚠️ ESP8266 BOARD IS NOT RESPONDING! Please check USB cable, power supply, and Wi-Fi connection.', 'critical');
-                        showNotification('🚨 BOARD DISCONNECTED!', 'ESP8266 is not sending valid data. Check connection!', 'error');
+                        addHistoryEvent('🚨 ESP8266 board is not sending valid data!');
+                        addAlert('⚠️⚠️⚠️ ESP8266 BOARD IS NOT RESPONDING! Check USB cable and power!', 'critical');
+                        showNotification('🚨 BOARD DISCONNECTED!', 'ESP8266 is not responding!', 'error');
                     }
                 }
             } else {
                 if (!isBoardConnected) {
                     isBoardConnected = true;
                     boardDisconnectAlertSent = false;
-                    addHistoryEvent('✅ ESP8266 board is back online (valid data received)');
-                    addAlert('✅ ESP8266 device is back online and sending valid data', 'info');
-                    showNotification('✅ Device Reconnected', 'ESP8266 is now sending data again!', 'success');
+                    addHistoryEvent('✅ ESP8266 board is back online');
+                    addAlert('✅ ESP8266 device is back online', 'info');
+                    showNotification('✅ Device Reconnected', 'ESP8266 is now sending data!', 'success');
                 }
             }
         }
 
+        // FAST detection - 3 seconds warning, 6 seconds critical
         function checkDataStaleness() {
             const timeSinceLastFetch = (Date.now() - lastSuccessfulFetch) / 1000;
             const staleWarningDiv = document.getElementById('stale-warning');
             const connectionStatus = document.getElementById('connection-status');
             
-            if (timeSinceLastFetch > 10) {
+            if (timeSinceLastFetch > 6) {  // CRITICAL at 6 seconds
                 if (!window.criticalAlertSent) {
                     window.criticalAlertSent = true;
-                    addHistoryEvent(`🚨 CRITICAL: No API response for ${Math.floor(timeSinceLastFetch)} seconds`);
-                    addAlert(`⚠️⚠️⚠️ BACKEND API IS NOT RESPONDING! Last successful fetch ${Math.floor(timeSinceLastFetch)} seconds ago.`, 'critical');
+                    addHistoryEvent(`🚨 CRITICAL: No data for ${Math.floor(timeSinceLastFetch)} seconds`);
+                    addAlert(`⚠️⚠️⚠️ NO DATA FOR ${Math.floor(timeSinceLastFetch)} SECONDS! ESP8266 may be disconnected.`, 'critical');
                 }
                 staleWarningDiv.style.display = 'flex';
                 staleWarningDiv.className = 'data-stale-warning critical';
                 document.getElementById('stale-message').innerHTML = `🚨 CRITICAL: NO DATA FOR ${Math.floor(timeSinceLastFetch)} SECONDS!`;
-                document.getElementById('stale-detail').innerHTML = `ESP8266 may be disconnected or API is down. Please check the device.`;
+                document.getElementById('stale-detail').innerHTML = `ESP8266 IS DISCONNECTED! Check USB cable and power.`;
                 connectionStatus.className = 'status-badge offline';
                 connectionStatus.innerHTML = '● DEVICE OFFLINE';
-            } else if (timeSinceLastFetch > 5) {
+            } else if (timeSinceLastFetch > 3) {  // WARNING at 3 seconds
                 staleWarningDiv.style.display = 'flex';
                 staleWarningDiv.className = 'data-stale-warning';
                 document.getElementById('stale-message').innerHTML = `⚠️ WARNING: NO DATA FOR ${Math.floor(timeSinceLastFetch)} SECONDS!`;
-                document.getElementById('stale-detail').innerHTML = `Waiting for ESP8266 to send data...`;
-                connectionStatus.className = 'status-badge offline';
+                document.getElementById('stale-detail').innerHTML = `ESP8266 not responding. Check connection.`;
+                connectionStatus.className = 'status-badge warning';
                 connectionStatus.innerHTML = '⚠️ NO DATA';
                 window.criticalAlertSent = false;
             } else {
-                if (staleWarningDiv.style.display === 'flex') {
-                    staleWarningDiv.style.display = 'none';
-                }
+                staleWarningDiv.style.display = 'none';
                 if (isBoardConnected) {
                     connectionStatus.className = 'status-badge online';
                     connectionStatus.innerHTML = '● Online';
@@ -908,7 +389,6 @@
             alertHistory.unshift(alert);
             saveHistory();
             updateAlertsDisplay();
-            
             if (voiceEnabled) {
                 let utterance = new SpeechSynthesisUtterance(message);
                 utterance.lang = 'en-US';
@@ -945,31 +425,15 @@
             }).join('');
         }
 
-        function clearHistory() {
-            eventHistory = [];
-            saveHistory();
-            updateHistoryDisplay();
-            addHistoryEvent('History cleared by user');
-        }
-
-        function clearAlerts() {
-            alertHistory = [];
-            saveHistory();
-            updateAlertsDisplay();
-            addHistoryEvent('Alerts cleared by user');
-        }
+        function clearHistory() { eventHistory = []; saveHistory(); updateHistoryDisplay(); addHistoryEvent('History cleared'); }
+        function clearAlerts() { alertHistory = []; saveHistory(); updateAlertsDisplay(); addHistoryEvent('Alerts cleared'); }
 
         function showSection(section) {
             document.getElementById('dashboardSection').style.display = section === 'dashboard' ? 'block' : 'none';
             document.getElementById('historySection').style.display = section === 'history' ? 'block' : 'none';
             document.getElementById('alertsSection').style.display = section === 'alerts' ? 'block' : 'none';
-            
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.querySelectorAll(`.nav-item[onclick="showSection('${section}')"]`).forEach(item => {
-                item.classList.add('active');
-            });
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll(`.nav-item[onclick="showSection('${section}')"]`).forEach(item => item.classList.add('active'));
         }
 
         function toggleVoice() {
@@ -1003,14 +467,12 @@
                 document.getElementById('advice-container').innerHTML = '⚠️ Waiting for valid sensor data...';
                 return;
             }
-            
             let advice = '';
             let isUrgent = false;
-            
             if (temp > 35) {
                 advice = `🔥 HIGH TEMPERATURE ALERT: ${temp}°C! `;
                 if (!lastAlertTime.highTemp || Date.now() - lastAlertTime.highTemp > 300000) {
-                    addAlert(`🌡️ HIGH TEMPERATURE: ${temp}°C! Plants are at risk.`, 'critical');
+                    addAlert(`🌡️ HIGH TEMPERATURE: ${temp}°C! Plants at risk.`, 'critical');
                     lastAlertTime.highTemp = Date.now();
                 }
             } else if (temp < 15) {
@@ -1020,26 +482,24 @@
                     lastAlertTime.lowTemp = Date.now();
                 }
             }
-            
             if (soilMoisture < 30) {
-                advice += `💧 URGENT: Soil moisture is LOW (${soilMoisture}%)! IRRIGATION NEEDED IMMEDIATELY!`;
+                advice += `💧 URGENT: Soil moisture LOW (${soilMoisture}%)! IRRIGATE NOW!`;
                 isUrgent = true;
                 if (!lastAlertTime.lowSoil || Date.now() - lastAlertTime.lowSoil > 600000) {
-                    addAlert(`💧 IRRIGATION ALERT: Soil moisture is ${soilMoisture}%! Please irrigate immediately.`, 'critical');
+                    addAlert(`💧 IRRIGATION ALERT: Soil moisture ${soilMoisture}%! Water crops now!`, 'critical');
                     lastAlertTime.lowSoil = Date.now();
                 }
             } else if (soilMoisture < 45) {
-                advice += `⚠️ Soil moisture is ${soilMoisture}% (low side). Consider irrigating soon.`;
+                advice += `⚠️ Soil moisture ${soilMoisture}% (low). Consider irrigating soon.`;
                 if (!lastAlertTime.medLowSoil || Date.now() - lastAlertTime.medLowSoil > 3600000) {
-                    addAlert(`💧 Irrigation reminder: Soil moisture is ${soilMoisture}%. Plan to water soon.`, 'warning');
+                    addAlert(`💧 Irrigation reminder: Soil moisture ${soilMoisture}%. Plan to water.`, 'warning');
                     lastAlertTime.medLowSoil = Date.now();
                 }
             } else if (soilMoisture > 70) {
-                advice += `✅ Soil moisture is ${soilMoisture}% (good). WAIT before irrigating.`;
+                advice += `✅ Soil moisture ${soilMoisture}% (good). WAIT before irrigating.`;
             } else {
-                advice += `✅ Soil conditions are OPTIMAL (${soilMoisture}%). Maintain current schedule.`;
+                advice += `✅ Soil conditions OPTIMAL (${soilMoisture}%). Maintain schedule.`;
             }
-            
             const adviceDiv = document.getElementById('advice-container');
             adviceDiv.innerHTML = advice;
             if (isUrgent) adviceDiv.classList.add('irrigation-urgent');
@@ -1050,33 +510,18 @@
             let tempDisplay = (reading.temperature === -999 || !reading.temperature) ? 'OFFLINE' : reading.temperature.toFixed(1) + '°C';
             let humDisplay = (reading.humidity === -999 || !reading.humidity) ? 'OFFLINE' : reading.humidity.toFixed(1) + '%';
             let soilDisplay = (reading.soil_moisture === -999 || reading.soil_moisture === undefined) ? 'OFFLINE' : reading.soil_moisture + '%';
-            
             let tempClass = (reading.temperature === -999 || !reading.temperature) ? 'critical' : getClass('temp', reading.temperature);
             let humClass = (reading.humidity === -999 || !reading.humidity) ? 'critical' : getClass('hum', reading.humidity);
             let soilClass = (reading.soil_moisture === -999 || reading.soil_moisture === undefined) ? 'critical' : getClass('soil', reading.soil_moisture);
-            
-            return `
-                <div class="sensor-card">
-                    <div class="sensor-metrics">
-                        <div class="metric-item"><span class="metric-label">🌡️ Temperature</span><span class="metric-value temp-${tempClass}">${tempDisplay}</span></div>
-                        <div class="metric-item"><span class="metric-label">💧 Humidity</span><span class="metric-value humidity-${humClass}">${humDisplay}</span></div>
-                        <div class="metric-item"><span class="metric-label">🌱 Soil</span><span class="metric-value soil-${soilClass}">${soilDisplay}</span></div>
-                    </div>
-                </div>
-            `;
+            return `<div class="sensor-card"><div class="sensor-metrics"><div class="metric-item"><span class="metric-label">🌡️ Temperature</span><span class="metric-value temp-${tempClass}">${tempDisplay}</span></div><div class="metric-item"><span class="metric-label">💧 Humidity</span><span class="metric-value humidity-${humClass}">${humDisplay}</span></div><div class="metric-item"><span class="metric-label">🌱 Soil</span><span class="metric-value soil-${soilClass}">${soilDisplay}</span></div></div></div>`;
         }
 
         function updateStats(readings) {
             if (readings.length === 0) return;
             let validReadings = readings.filter(r => r.temperature !== -999 && r.humidity !== -999 && r.soil_moisture !== -999);
             if (validReadings.length === 0) return;
-            
             let sumTemp = 0, sumHum = 0, sumSoil = 0;
-            for (let r of validReadings) {
-                sumTemp += r.temperature;
-                sumHum += r.humidity;
-                sumSoil += r.soil_moisture;
-            }
+            for (let r of validReadings) { sumTemp += r.temperature; sumHum += r.humidity; sumSoil += r.soil_moisture; }
             document.getElementById('avg-temp').innerHTML = (sumTemp / validReadings.length).toFixed(1) + '°C';
             document.getElementById('avg-humidity').innerHTML = Math.round(sumHum / validReadings.length) + '%';
             document.getElementById('avg-soil').innerHTML = Math.round(sumSoil / validReadings.length) + '%';
@@ -1088,10 +533,8 @@
                 let response = await fetch(API_URL + "/api/sensor/all");
                 let readings = await response.json();
                 if (readings.length === 0) return;
-                
                 let validReadings = readings.filter(r => r.temperature !== -999 && r.humidity !== -999);
                 if (validReadings.length === 0) return;
-                
                 allReadings = validReadings;
                 let last20 = validReadings.slice(0, 20).reverse();
                 let labels = last20.map(r => { let d = new Date(r.recorded_at); return d.getHours() + ":" + String(d.getMinutes()).padStart(2,'0'); });
@@ -1099,14 +542,7 @@
                 let hums = last20.map(r => r.humidity);
                 if (chart) chart.destroy();
                 let ctx = document.getElementById('sensor-chart').getContext('2d');
-                chart = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels: labels, datasets: [
-                        { label: 'Temperature (°C)', data: temps, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true },
-                        { label: 'Humidity (%)', data: hums, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, fill: true }
-                    ]},
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, max: 100 } } }
-                });
+                chart = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Temperature (°C)', data: temps, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true }, { label: 'Humidity (%)', data: hums, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, fill: true }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, max: 100 } } } });
             } catch(e) { console.error(e); }
         }
 
@@ -1115,52 +551,36 @@
                 let response = await fetch(API_URL + "/api/sensor/latest");
                 if (!response.ok) throw new Error();
                 let readings = await response.json();
-                
                 lastSuccessfulFetch = Date.now();
                 document.getElementById('last-updated').innerHTML = 'Last updated: ' + new Date().toLocaleTimeString();
-                
                 let container = document.getElementById('cards-container');
                 if (readings.length === 0) {
                     container.innerHTML = '<div class="no-data">📡 Waiting for sensor data from ESP8266...</div>';
-                    // No data means board is not sending
                     updateSensorStatusFromNewData(null);
                 } else {
                     container.innerHTML = readings.map(createSensorCard).join('');
-                    let latest = readings[0];
-                    
-                    // Update sensor status based on ACTUAL new data
-                    updateSensorStatusFromNewData(latest);
-                    
-                    if (latest.temperature !== -999 && latest.humidity !== -999 && latest.soil_moisture !== -999) {
-                        updateIrrigationAdvice(latest.temperature, latest.humidity, latest.soil_moisture);
-                    } else {
-                        document.getElementById('advice-container').innerHTML = '⚠️ Waiting for valid sensor data...';
+                    updateSensorStatusFromNewData(readings[0]);
+                    if (readings[0].temperature !== -999 && readings[0].humidity !== -999 && readings[0].soil_moisture !== -999) {
+                        updateIrrigationAdvice(readings[0].temperature, readings[0].humidity, readings[0].soil_moisture);
                     }
                 }
-                
                 updateStats(readings);
                 await updateChart();
                 updateHistoryDisplay();
                 updateAlertsDisplay();
-                
-            } catch(e) {
-                console.error('Fetch error:', e);
-                lastSuccessfulFetch = Date.now() - 60000; // Mark as stale
-                updateSensorStatusFromNewData(null);
-            }
+            } catch(e) { console.error(e); lastSuccessfulFetch = Date.now() - 60000; updateSensorStatusFromNewData(null); }
         }
 
         document.getElementById('searchInput')?.addEventListener('input', function(e) {
             let searchTerm = e.target.value.toLowerCase();
-            let items = document.querySelectorAll('.history-item, .alert-item');
-            items.forEach(item => {
-                if (item.innerText.toLowerCase().includes(searchTerm)) item.style.display = 'block';
-                else item.style.display = 'none';
+            document.querySelectorAll('.history-item, .alert-item').forEach(item => {
+                item.style.display = item.innerText.toLowerCase().includes(searchTerm) ? 'block' : 'none';
             });
         });
 
+        // FAST REFRESH - every 1 SECOND!
         setInterval(checkDataStaleness, 1000);
-        setInterval(fetchData, 3000);
+        setInterval(fetchData, 1000);  // Check every 1 second
         loadHistory();
         fetchData();
     </script>
