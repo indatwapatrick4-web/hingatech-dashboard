@@ -71,7 +71,6 @@
             padding-bottom: 80px;
         }
 
-        /* Data Stale Warning */
         .data-stale-warning {
             background: #fef3c7;
             border-left: 4px solid #f59e0b;
@@ -191,7 +190,6 @@
             color: #a0aec0;
         }
 
-        /* Sensor Status - Critical for instant feedback */
         .sensor-status-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -656,7 +654,6 @@
                     <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-info"><h3 id="total-readings">0</h3><p>Total Readings</p><small>All time</small></div></div>
                 </div>
 
-                <!-- Sensor Status - Will turn RED immediately when sensor fails -->
                 <div class="sensor-status-grid">
                     <div class="sensor-status-card online" id="dht22-status">
                         <div class="sensor-status-icon">🌡️</div>
@@ -725,13 +722,12 @@
         let lastAlertTime = {};
         let lastDataReceivedTime = Date.now();
         
-        // Track last valid sensor values to detect failure instantly
-        let lastValidDHT22 = { temp: null, humidity: null, lastSeen: Date.now() };
-        let lastValidSoil = { moisture: null, lastSeen: Date.now() };
+        // Sensor status variables
         let dht22Working = true;
         let soilWorking = true;
-        
-        const SENSOR_TIMEOUT = 3000; // 3 seconds - if no data, sensor is offline
+        let lastValidDHT22 = { temp: null, humidity: null, lastSeen: Date.now() };
+        let lastValidSoil = { moisture: null, lastSeen: Date.now() };
+        let lastKnownValues = { temp: null, humidity: null, soil: null };
 
         document.addEventListener('DOMContentLoaded', function() {
             if ("Notification" in window && Notification.permission === "default") {
@@ -746,21 +742,27 @@
             }
         }
 
-        // INSTANT SENSOR FAILURE DETECTION
-        function updateSensorStatus(readings) {
+        // ========== COMPLETE SENSOR HEALTH FUNCTION ==========
+        function updateSensorHealth(readings) {
             const now = Date.now();
             let hasValidData = readings.length > 0 && readings[0];
+            let latest = hasValidData ? readings[0] : null;
             
-            // Check DHT22 Sensor
-            if (hasValidData && readings[0].temperature && readings[0].humidity) {
-                // Sensor is working - update last seen time
-                lastValidDHT22 = {
-                    temp: readings[0].temperature,
-                    humidity: readings[0].humidity,
-                    lastSeen: now
+            // Check DHT22 Sensor - look for -999 value or missing data
+            let dhtOnline = false;
+            if (latest && latest.temperature !== undefined && latest.temperature !== -999 && 
+                latest.humidity !== undefined && latest.humidity !== -999) {
+                dhtOnline = true;
+                lastValidDHT22 = { 
+                    temp: latest.temperature, 
+                    humidity: latest.humidity, 
+                    lastSeen: now 
                 };
+            }
+            
+            // Update DHT22 UI
+            if (dhtOnline) {
                 if (!dht22Working) {
-                    // Sensor came back online
                     dht22Working = true;
                     addHistoryEvent('✅ DHT22 sensor is back online');
                     addAlert('✅ DHT22 sensor has recovered and is now working normally', 'info');
@@ -770,8 +772,7 @@
                 document.getElementById('dht22-status-text').innerHTML = '● Online';
                 document.getElementById('dht22-status-text').className = 'online-text';
             } else {
-                // Check if sensor data is stale (no valid data for > 3 seconds)
-                if (dht22Working && (now - lastValidDHT22.lastSeen) > SENSOR_TIMEOUT) {
+                if (dht22Working) {
                     dht22Working = false;
                     let message = '⚠️ DHT22 TEMPERATURE SENSOR IS NOT RESPONDING! Please check the wiring.';
                     addHistoryEvent('⚠️ CRITICAL: DHT22 sensor stopped responding!');
@@ -783,23 +784,30 @@
                 document.getElementById('dht22-status-text').className = 'offline-text';
             }
             
-            // Check Soil Moisture Sensor
-            if (hasValidData && readings[0].soil_moisture !== undefined && readings[0].soil_moisture >= 0) {
-                lastValidSoil = {
-                    moisture: readings[0].soil_moisture,
-                    lastSeen: now
+            // Check Soil Sensor - look for -999 value
+            let soilOnline = false;
+            if (latest && latest.soil_moisture !== undefined && latest.soil_moisture !== -999 && 
+                latest.soil_moisture >= 0 && latest.soil_moisture <= 100) {
+                soilOnline = true;
+                lastValidSoil = { 
+                    moisture: latest.soil_moisture, 
+                    lastSeen: now 
                 };
+            }
+            
+            // Update Soil UI
+            if (soilOnline) {
                 if (!soilWorking) {
                     soilWorking = true;
                     addHistoryEvent('✅ Soil moisture sensor is back online');
-                    addAlert('✅ Soil moisture sensor has recovered', 'info');
+                    addAlert('✅ Soil moisture sensor has recovered and is now working normally', 'info');
                     showNotification('Soil Sensor Recovered', 'The soil moisture sensor is working again!', 'success');
                 }
                 document.getElementById('soil-status').className = 'sensor-status-card online';
                 document.getElementById('soil-status-text').innerHTML = '● Online';
                 document.getElementById('soil-status-text').className = 'online-text';
             } else {
-                if (soilWorking && (now - lastValidSoil.lastSeen) > SENSOR_TIMEOUT) {
+                if (soilWorking) {
                     soilWorking = false;
                     let message = '⚠️ SOIL MOISTURE SENSOR IS NOT RESPONDING! Please check the wiring.';
                     addHistoryEvent('⚠️ CRITICAL: Soil moisture sensor stopped responding!');
@@ -865,8 +873,6 @@
                 window.criticalAlertSent = false;
             }
         }
-
-        let lastKnownValues = { temp: null, humidity: null, soil: null };
 
         function loadHistory() {
             let savedHistory = localStorage.getItem('hingatech_history');
@@ -963,6 +969,7 @@
         }
 
         function getClass(type, value) {
+            if (value === -999) return 'critical';
             if (type === 'temp') {
                 if (value < 10 || value > 40) return 'critical';
                 if (value < 15 || value > 35) return 'warning';
@@ -982,6 +989,11 @@
         }
 
         function updateIrrigationAdvice(temp, humidity, soilMoisture) {
+            if (temp === -999 || humidity === -999 || soilMoisture === -999) {
+                document.getElementById('advice-container').innerHTML = '⚠️ Sensor failure detected. Please check sensor connections.';
+                return;
+            }
+            
             let advice = '';
             let isUrgent = false;
             
@@ -1025,12 +1037,20 @@
         }
 
         function createSensorCard(reading) {
+            let tempDisplay = reading.temperature === -999 ? 'OFFLINE' : reading.temperature.toFixed(1) + '°C';
+            let humDisplay = reading.humidity === -999 ? 'OFFLINE' : reading.humidity.toFixed(1) + '%';
+            let soilDisplay = reading.soil_moisture === -999 ? 'OFFLINE' : reading.soil_moisture + '%';
+            
+            let tempClass = reading.temperature === -999 ? 'critical' : getClass('temp', reading.temperature);
+            let humClass = reading.humidity === -999 ? 'critical' : getClass('hum', reading.humidity);
+            let soilClass = reading.soil_moisture === -999 ? 'critical' : getClass('soil', reading.soil_moisture);
+            
             return `
                 <div class="sensor-card">
                     <div class="sensor-metrics">
-                        <div class="metric-item"><span class="metric-label">🌡️ Temperature</span><span class="metric-value temp-${getClass('temp', reading.temperature)}">${reading.temperature.toFixed(1)}°C</span></div>
-                        <div class="metric-item"><span class="metric-label">💧 Humidity</span><span class="metric-value humidity-${getClass('hum', reading.humidity)}">${reading.humidity.toFixed(1)}%</span></div>
-                        <div class="metric-item"><span class="metric-label">🌱 Soil</span><span class="metric-value soil-${getClass('soil', reading.soil_moisture)}">${reading.soil_moisture}%</span></div>
+                        <div class="metric-item"><span class="metric-label">🌡️ Temperature</span><span class="metric-value temp-${tempClass}">${tempDisplay}</span></div>
+                        <div class="metric-item"><span class="metric-label">💧 Humidity</span><span class="metric-value humidity-${humClass}">${humDisplay}</span></div>
+                        <div class="metric-item"><span class="metric-label">🌱 Soil</span><span class="metric-value soil-${soilClass}">${soilDisplay}</span></div>
                     </div>
                 </div>
             `;
@@ -1038,15 +1058,18 @@
 
         function updateStats(readings) {
             if (readings.length === 0) return;
+            let validReadings = readings.filter(r => r.temperature !== -999 && r.humidity !== -999 && r.soil_moisture !== -999);
+            if (validReadings.length === 0) return;
+            
             let sumTemp = 0, sumHum = 0, sumSoil = 0;
-            for (let r of readings) {
+            for (let r of validReadings) {
                 sumTemp += r.temperature;
                 sumHum += r.humidity;
                 sumSoil += r.soil_moisture;
             }
-            document.getElementById('avg-temp').innerHTML = (sumTemp / readings.length).toFixed(1) + '°C';
-            document.getElementById('avg-humidity').innerHTML = Math.round(sumHum / readings.length) + '%';
-            document.getElementById('avg-soil').innerHTML = Math.round(sumSoil / readings.length) + '%';
+            document.getElementById('avg-temp').innerHTML = (sumTemp / validReadings.length).toFixed(1) + '°C';
+            document.getElementById('avg-humidity').innerHTML = Math.round(sumHum / validReadings.length) + '%';
+            document.getElementById('avg-soil').innerHTML = Math.round(sumSoil / validReadings.length) + '%';
             document.getElementById('total-readings').innerHTML = allReadings.length;
         }
 
@@ -1055,8 +1078,12 @@
                 let response = await fetch(API_URL + "/api/sensor/all");
                 let readings = await response.json();
                 if (readings.length === 0) return;
-                allReadings = readings;
-                let last20 = readings.slice(0, 20).reverse();
+                
+                let validReadings = readings.filter(r => r.temperature !== -999 && r.humidity !== -999);
+                if (validReadings.length === 0) return;
+                
+                allReadings = validReadings;
+                let last20 = validReadings.slice(0, 20).reverse();
                 let labels = last20.map(r => { let d = new Date(r.recorded_at); return d.getHours() + ":" + String(d.getMinutes()).padStart(2,'0'); });
                 let temps = last20.map(r => r.temperature);
                 let hums = last20.map(r => r.humidity);
@@ -1089,25 +1116,20 @@
                     container.innerHTML = readings.map(createSensorCard).join('');
                     let latest = readings[0];
                     
-                    // Update last valid sensor data timestamps
-                    if (latest.temperature && latest.humidity) {
-                        lastValidDHT22.lastSeen = Date.now();
-                    }
-                    if (latest.soil_moisture !== undefined) {
-                        lastValidSoil.lastSeen = Date.now();
-                    }
-                    
-                    if (lastKnownValues.temp !== null) {
+                    if (lastKnownValues.temp !== null && latest.temperature !== -999 && lastKnownValues.temp !== -999) {
                         if (latest.temperature > 35 && lastKnownValues.temp <= 35) addHistoryEvent(`🌡️ Temperature exceeded 35°C (${latest.temperature}°C)`);
                         if (latest.temperature < 15 && lastKnownValues.temp >= 15) addHistoryEvent(`❄️ Temperature dropped below 15°C (${latest.temperature}°C)`);
-                        if (latest.soil_moisture < 30 && lastKnownValues.soil >= 30) addHistoryEvent(`💧 Soil moisture dropped below 30% (${latest.soil_moisture}%) - Irrigation needed`);
-                        if (latest.soil_moisture > 70 && lastKnownValues.soil <= 70) addHistoryEvent(`💧 Soil moisture exceeded 70% (${latest.soil_moisture}%)`);
+                        if (latest.soil_moisture < 30 && lastKnownValues.soil >= 30 && latest.soil_moisture !== -999) addHistoryEvent(`💧 Soil moisture dropped below 30% (${latest.soil_moisture}%) - Irrigation needed`);
+                        if (latest.soil_moisture > 70 && lastKnownValues.soil <= 70 && latest.soil_moisture !== -999) addHistoryEvent(`💧 Soil moisture exceeded 70% (${latest.soil_moisture}%)`);
                     }
                     lastKnownValues = { temp: latest.temperature, humidity: latest.humidity, soil: latest.soil_moisture };
-                    updateIrrigationAdvice(latest.temperature, latest.humidity, latest.soil_moisture);
+                    
+                    if (latest.temperature !== -999 && latest.humidity !== -999 && latest.soil_moisture !== -999) {
+                        updateIrrigationAdvice(latest.temperature, latest.humidity, latest.soil_moisture);
+                    }
                 }
                 
-                updateSensorStatus(readings);
+                updateSensorHealth(readings);
                 updateStats(readings);
                 await updateChart();
                 updateHistoryDisplay();
@@ -1115,9 +1137,18 @@
                 
             } catch(e) {
                 console.error('Fetch error:', e);
-                updateSensorStatus([]);
+                updateSensorHealth([]);
             }
         }
+
+        document.getElementById('searchInput')?.addEventListener('input', function(e) {
+            let searchTerm = e.target.value.toLowerCase();
+            let items = document.querySelectorAll('.history-item, .alert-item');
+            items.forEach(item => {
+                if (item.innerText.toLowerCase().includes(searchTerm)) item.style.display = 'block';
+                else item.style.display = 'none';
+            });
+        });
 
         setInterval(checkDataStaleness, 1000);
         setInterval(fetchData, 2000);
