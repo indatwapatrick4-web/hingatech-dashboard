@@ -72,7 +72,7 @@
             padding-bottom: 80px;
         }
 
-        /* Data Stale Warning */
+        /* Data Stale Warning - FAST DETECTION */
         .data-stale-warning {
             background: #fef3c7;
             border-left: 4px solid #f59e0b;
@@ -83,11 +83,23 @@
             align-items: center;
             gap: 10px;
             font-size: 13px;
+            animation: blinkWarning 1s ease-in-out;
         }
 
         .data-stale-warning.critical {
             background: #fee2e2;
             border-left-color: #ef4444;
+            animation: blinkCritical 0.5s ease-in-out infinite;
+        }
+
+        @keyframes blinkWarning {
+            0%, 100% { background: #fef3c7; }
+            50% { background: #fffbeb; }
+        }
+
+        @keyframes blinkCritical {
+            0%, 100% { background: #fee2e2; opacity: 1; }
+            50% { background: #fecaca; opacity: 0.8; }
         }
 
         /* Header */
@@ -137,11 +149,23 @@
         .status-badge.offline {
             background: #ef4444;
             color: white;
+            animation: pulseRed 1s infinite;
         }
 
         .status-badge.warning {
             background: #f59e0b;
             color: white;
+            animation: pulseOrange 1s infinite;
+        }
+
+        @keyframes pulseRed {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes pulseOrange {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         .timestamp {
@@ -639,12 +663,12 @@
                 </div>
             </header>
 
-            <!-- DATA STALE WARNING - This appears when ESP8266 stops sending data -->
+            <!-- DATA STALE WARNING - Fast detection: 5 seconds warning, 10 seconds critical -->
             <div id="stale-warning" style="display:none;" class="data-stale-warning">
-                <span>⚠️</span>
+                <span id="stale-icon">⚠️</span>
                 <div>
-                    <strong id="stale-message">No data received for 15 seconds!</strong><br>
-                    <small id="stale-detail">ESP8266 may be disconnected or powered off. Please check the device.</small>
+                    <strong id="stale-message">No data received!</strong><br>
+                    <small id="stale-detail">Checking connection...</small>
                 </div>
             </div>
 
@@ -718,7 +742,11 @@
         let lastAlertTime = {};
         let lastDataReceivedTime = Date.now();
         let staleWarningShown = false;
-        let boardDisconnectAlertSent = false;
+        let criticalAlertSent = false;
+
+        // Warning thresholds: 5 seconds for warning, 10 seconds for critical
+        const WARNING_SECONDS = 5;
+        const CRITICAL_SECONDS = 10;
 
         // Request notification permission
         document.addEventListener('DOMContentLoaded', function() {
@@ -735,43 +763,66 @@
             }
         }
 
-        // Check if data is stale (no new data for 15 seconds)
+        // Check if data is stale - FAST DETECTION
         function checkDataStaleness() {
             const timeSinceLastData = (Date.now() - lastDataReceivedTime) / 1000;
             const staleWarningDiv = document.getElementById('stale-warning');
             const connectionStatus = document.getElementById('connection-status');
+            const staleMessage = document.getElementById('stale-message');
+            const staleDetail = document.getElementById('stale-detail');
+            const staleIcon = document.getElementById('stale-icon');
             
-            if (timeSinceLastData > 15) {
-                // Data is stale - ESP8266 is not sending
-                if (!staleWarningShown) {
+            if (timeSinceLastData > CRITICAL_SECONDS) {
+                // CRITICAL - More than 10 seconds
+                if (!criticalAlertSent) {
+                    criticalAlertSent = true;
                     staleWarningShown = true;
-                    const message = `⚠️ NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS! ESP8266 may be disconnected.`;
-                    addHistoryEvent(`🚨 CRITICAL: No data received for ${Math.floor(timeSinceLastData)} seconds - ESP8266 may be offline!`);
-                    addAlert(`⚠️⚠️⚠️ ESP8266 IS NOT RESPONDING! Last data received ${Math.floor(timeSinceLastData)} seconds ago. Please check:
-1. USB cable connection
-2. Power supply
-3. Wi-Fi connection`, 'critical');
-                    showNotification('🚨 DEVICE DISCONNECTED!', `No data for ${Math.floor(timeSinceLastData)} seconds. Check ESP8266!`, 'error');
-                    
-                    // Update connection status
-                    connectionStatus.className = 'status-badge offline';
-                    connectionStatus.innerHTML = '● DEVICE OFFLINE';
+                    const message = `🚨 CRITICAL: NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS! ESP8266 IS DISCONNECTED!`;
+                    addHistoryEvent(`🚨 CRITICAL: No data received for ${Math.floor(timeSinceLastData)} seconds - ESP8266 is offline!`);
+                    addAlert(`⚠️⚠️⚠️ ESP8266 IS NOT RESPONDING! Last data received ${Math.floor(timeSinceLastData)} seconds ago.
+
+FARMER ACTION REQUIRED:
+1. Check USB cable connection
+2. Check power supply
+3. Check Wi-Fi connection
+4. Restart the ESP8266 device`, 'critical');
+                    showNotification('🚨 DEVICE DISCONNECTED!', `No data for ${Math.floor(timeSinceLastData)} seconds. Check ESP8266 immediately!`, 'error');
                 }
                 
                 staleWarningDiv.style.display = 'flex';
-                const staleMessage = document.getElementById('stale-message');
-                const staleDetail = document.getElementById('stale-detail');
-                staleMessage.innerHTML = `⚠️ NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS!`;
-                staleDetail.innerHTML = `ESP8266 is not responding. Please check: USB cable, power supply, or Wi-Fi connection.`;
+                staleWarningDiv.className = 'data-stale-warning critical';
+                staleIcon.innerHTML = '🚨🚨🚨';
+                staleMessage.innerHTML = `🚨 CRITICAL: NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS!`;
+                staleDetail.innerHTML = `ESP8266 IS DISCONNECTED! Please check USB cable, power supply, and Wi-Fi immediately.`;
                 
-                if (timeSinceLastData > 30) {
-                    staleWarningDiv.classList.add('critical');
-                    connectionStatus.className = 'status-badge offline';
-                    connectionStatus.innerHTML = '● DEVICE OFFLINE';
+                connectionStatus.className = 'status-badge offline';
+                connectionStatus.innerHTML = '● DEVICE OFFLINE';
+                
+            } else if (timeSinceLastData > WARNING_SECONDS) {
+                // WARNING - Between 5 and 10 seconds
+                if (!staleWarningShown) {
+                    staleWarningShown = true;
+                    criticalAlertSent = false;
+                    const message = `⚠️ WARNING: No data for ${Math.floor(timeSinceLastData)} seconds. ESP8266 may have stopped responding.`;
+                    addHistoryEvent(`⚠️ Warning: No data received for ${Math.floor(timeSinceLastData)} seconds`);
+                    addAlert(`⚠️ ESP8266 is not responding! Last data ${Math.floor(timeSinceLastData)} seconds ago. Check the device.`, 'warning');
+                    showNotification('⚠️ Device Not Responding', `No data for ${Math.floor(timeSinceLastData)} seconds. Check ESP8266!`, 'warning');
                 }
+                
+                staleWarningDiv.style.display = 'flex';
+                staleWarningDiv.className = 'data-stale-warning';
+                staleIcon.innerHTML = '⚠️';
+                staleMessage.innerHTML = `⚠️ WARNING: NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS!`;
+                staleDetail.innerHTML = `ESP8266 is not responding. Checking connection... Will alert if no data in ${Math.floor(CRITICAL_SECONDS - timeSinceLastData)} seconds.`;
+                
+                connectionStatus.className = 'status-badge warning';
+                connectionStatus.innerHTML = '⚠️ DEVICE WARNING';
+                
             } else {
+                // Normal - Data is coming
                 if (staleWarningShown) {
                     staleWarningShown = false;
+                    criticalAlertSent = false;
                     addHistoryEvent('✅ ESP8266 is back online - Data receiving恢复正常');
                     addAlert('✅ ESP8266 device is back online and sending data', 'info');
                     showNotification('✅ Device Reconnected', 'ESP8266 is now sending data again!', 'success');
@@ -782,6 +833,9 @@
                 connectionStatus.innerHTML = '● Online';
             }
         }
+
+        let sensorOfflineStart = { dht22: null, soil: null };
+        let lastKnownValues = { temp: null, humidity: null, soil: null };
 
         function checkSensorHealth(readings) {
             let now = Date.now();
@@ -833,9 +887,6 @@
                 document.getElementById('soil-status-text').className = 'offline-text';
             }
         }
-
-        let sensorOfflineStart = { dht22: null, soil: null };
-        let lastKnownValues = { temp: null, humidity: null, soil: null };
 
         function loadHistory() {
             let savedHistory = localStorage.getItem('hingatech_history');
@@ -919,181 +970,4 @@
             
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
-            });
-            document.querySelectorAll(`.nav-item[onclick="showSection('${section}')"]`).forEach(item => {
-                item.classList.add('active');
-            });
-        }
-
-        function toggleVoice() {
-            voiceEnabled = !voiceEnabled;
-            document.querySelector('.voice-toggle').innerHTML = voiceEnabled ? '🔊 Voice Alerts: ON' : '🔇 Voice Alerts: OFF';
-            addHistoryEvent(`Voice alerts ${voiceEnabled ? 'enabled' : 'disabled'}`);
-        }
-
-        function timeAgo(dateString) {
-            let date = new Date(dateString);
-            let seconds = Math.floor((Date.now() - date) / 1000);
-            if (seconds < 60) return seconds + "s ago";
-            if (seconds < 3600) return Math.floor(seconds / 60) + "m ago";
-            if (seconds < 86400) return Math.floor(seconds / 3600) + "h ago";
-            return Math.floor(seconds / 86400) + "d ago";
-        }
-
-        function getClass(type, value) {
-            if (type === 'temp') {
-                if (value < 10 || value > 40) return 'critical';
-                if (value < 15 || value > 35) return 'warning';
-                return 'normal';
-            }
-            if (type === 'hum') {
-                if (value < 20 || value > 90) return 'critical';
-                if (value < 40 || value > 80) return 'warning';
-                return 'normal';
-            }
-            if (type === 'soil') {
-                if (value < 15 || value > 85) return 'critical';
-                if (value < 30 || value > 70) return 'warning';
-                return 'normal';
-            }
-            return 'normal';
-        }
-
-        function updateIrrigationAdvice(temp, humidity, soilMoisture) {
-            let advice = '';
-            let isUrgent = false;
-            
-            if (temp > 35) {
-                advice = `🔥 HIGH TEMPERATURE ALERT: ${temp}°C! `;
-                if (!lastAlertTime.highTemp || Date.now() - lastAlertTime.highTemp > 300000) {
-                    addAlert(`🌡️ HIGH TEMPERATURE: ${temp}°C! Plants are at risk. Consider providing shade or increasing ventilation.`, 'critical');
-                    lastAlertTime.highTemp = Date.now();
-                }
-            } else if (temp < 15) {
-                advice = `❄️ LOW TEMPERATURE ALERT: ${temp}°C! `;
-                if (!lastAlertTime.lowTemp || Date.now() - lastAlertTime.lowTemp > 300000) {
-                    addAlert(`❄️ LOW TEMPERATURE: ${temp}°C! Plants may be stressed. Consider protective measures.`, 'warning');
-                    lastAlertTime.lowTemp = Date.now();
-                }
-            }
-            
-            if (soilMoisture < 30) {
-                advice += `💧 URGENT: Soil moisture is LOW (${soilMoisture}%)! IRRIGATION NEEDED IMMEDIATELY!`;
-                isUrgent = true;
-                if (!lastAlertTime.lowSoil || Date.now() - lastAlertTime.lowSoil > 600000) {
-                    addAlert(`💧 IRRIGATION ALERT: Soil moisture is ${soilMoisture}%! Please irrigate your crops immediately.`, 'critical');
-                    lastAlertTime.lowSoil = Date.now();
-                }
-            } else if (soilMoisture < 45) {
-                advice += `⚠️ Soil moisture is ${soilMoisture}% (low side). Consider irrigating soon.`;
-                if (!lastAlertTime.medLowSoil || Date.now() - lastAlertTime.medLowSoil > 3600000) {
-                    addAlert(`💧 Irrigation reminder: Soil moisture is ${soilMoisture}%. Plan to water soon.`, 'warning');
-                    lastAlertTime.medLowSoil = Date.now();
-                }
-            } else if (soilMoisture > 70) {
-                advice += `✅ Soil moisture is ${soilMoisture}% (good). WAIT before irrigating.`;
-            } else {
-                advice += `✅ Soil conditions are OPTIMAL (${soilMoisture}%). Maintain current schedule.`;
-            }
-            
-            const adviceDiv = document.getElementById('advice-container');
-            adviceDiv.innerHTML = advice;
-            if (isUrgent) adviceDiv.classList.add('irrigation-urgent');
-            else adviceDiv.classList.remove('irrigation-urgent');
-        }
-
-        function createSensorCard(reading) {
-            return `
-                <div class="sensor-card">
-                    <div class="sensor-metrics">
-                        <div class="metric-item"><span class="metric-label">🌡️ Temperature</span><span class="metric-value temp-${getClass('temp', reading.temperature)}">${reading.temperature.toFixed(1)}°C</span></div>
-                        <div class="metric-item"><span class="metric-label">💧 Humidity</span><span class="metric-value humidity-${getClass('hum', reading.humidity)}">${reading.humidity.toFixed(1)}%</span></div>
-                        <div class="metric-item"><span class="metric-label">🌱 Soil</span><span class="metric-value soil-${getClass('soil', reading.soil_moisture)}">${reading.soil_moisture}%</span></div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateStats(readings) {
-            if (readings.length === 0) return;
-            let sumTemp = 0, sumHum = 0, sumSoil = 0;
-            for (let r of readings) {
-                sumTemp += r.temperature;
-                sumHum += r.humidity;
-                sumSoil += r.soil_moisture;
-            }
-            document.getElementById('avg-temp').innerHTML = (sumTemp / readings.length).toFixed(1) + '°C';
-            document.getElementById('avg-humidity').innerHTML = Math.round(sumHum / readings.length) + '%';
-            document.getElementById('avg-soil').innerHTML = Math.round(sumSoil / readings.length) + '%';
-            document.getElementById('total-readings').innerHTML = allReadings.length;
-        }
-
-        async function updateChart() {
-            try {
-                let response = await fetch(API_URL + "/api/sensor/all");
-                let readings = await response.json();
-                if (readings.length === 0) return;
-                allReadings = readings;
-                let last20 = readings.slice(0, 20).reverse();
-                let labels = last20.map(r => { let d = new Date(r.recorded_at); return d.getHours() + ":" + String(d.getMinutes()).padStart(2,'0'); });
-                let temps = last20.map(r => r.temperature);
-                let hums = last20.map(r => r.humidity);
-                if (chart) chart.destroy();
-                let ctx = document.getElementById('sensor-chart').getContext('2d');
-                chart = new Chart(ctx, {
-                    type: 'line',
-                    data: { labels: labels, datasets: [
-                        { label: 'Temperature (°C)', data: temps, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true },
-                        { label: 'Humidity (%)', data: hums, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, fill: true }
-                    ]},
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, max: 100 } } }
-                });
-            } catch(e) { console.error(e); }
-        }
-
-        async function fetchData() {
-            try {
-                let response = await fetch(API_URL + "/api/sensor/latest");
-                if (!response.ok) throw new Error();
-                let readings = await response.json();
-                
-                // Update last data received time
-                lastDataReceivedTime = Date.now();
-                
-                document.getElementById('last-updated').innerHTML = 'Last updated: ' + new Date().toLocaleTimeString();
-                
-                let container = document.getElementById('cards-container');
-                if (readings.length === 0) {
-                    container.innerHTML = '<div class="no-data">📡 Waiting for sensor data from ESP8266...</div>';
-                } else {
-                    container.innerHTML = readings.map(createSensorCard).join('');
-                    let latest = readings[0];
-                    if (lastKnownValues.temp !== null) {
-                        if (latest.temperature > 35 && lastKnownValues.temp <= 35) addHistoryEvent(`🌡️ Temperature exceeded 35°C (${latest.temperature}°C)`);
-                        if (latest.temperature < 15 && lastKnownValues.temp >= 15) addHistoryEvent(`❄️ Temperature dropped below 15°C (${latest.temperature}°C)`);
-                        if (latest.soil_moisture < 30 && lastKnownValues.soil >= 30) addHistoryEvent(`💧 Soil moisture dropped below 30% (${latest.soil_moisture}%) - Irrigation needed`);
-                        if (latest.soil_moisture > 70 && lastKnownValues.soil <= 70) addHistoryEvent(`💧 Soil moisture exceeded 70% (${latest.soil_moisture}%)`);
-                    }
-                    lastKnownValues = { temp: latest.temperature, humidity: latest.humidity, soil: latest.soil_moisture };
-                    updateIrrigationAdvice(latest.temperature, latest.humidity, latest.soil_moisture);
-                }
-                
-                checkSensorHealth(readings);
-                updateStats(readings);
-                await updateChart();
-                updateHistoryDisplay();
-                updateAlertsDisplay();
-                
-            } catch(e) {
-                console.error('Fetch error:', e);
-            }
-        }
-
-        // Run stale check every second
-        setInterval(checkDataStaleness, 1000);
-        setInterval(fetchData, 3000);
-        loadHistory();
-        fetchData();
-    </script>
-</body>
-</html>
+           
