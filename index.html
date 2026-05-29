@@ -16,19 +16,17 @@
             background: #f0f4f8;
         }
 
-        /* Layout - Mobile First */
         .app-container {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
 
-        /* Hide sidebar on mobile, show bottom nav instead */
         .sidebar {
             display: none;
         }
 
-        /* Bottom Navigation Bar - Like Instagram */
+        /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -68,18 +66,31 @@
             background: rgba(26, 95, 58, 0.1);
         }
 
-        .nav-item span:not(.icon) {
-            font-size: 11px;
-        }
-
-        /* Main Content - Mobile First */
         .main-content {
             flex: 1;
             padding: 15px;
             padding-bottom: 80px;
         }
 
-        /* Header - Mobile Friendly */
+        /* Data Stale Warning */
+        .data-stale-warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .data-stale-warning.critical {
+            background: #fee2e2;
+            border-left-color: #ef4444;
+        }
+
+        /* Header */
         .top-header {
             display: flex;
             flex-direction: column;
@@ -106,6 +117,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .status-badge {
@@ -126,12 +139,17 @@
             color: white;
         }
 
+        .status-badge.warning {
+            background: #f59e0b;
+            color: white;
+        }
+
         .timestamp {
             font-size: 10px;
             color: #a0aec0;
         }
 
-        /* Stats Grid - Mobile */
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -169,7 +187,7 @@
             color: #a0aec0;
         }
 
-        /* Sensor Status - Mobile */
+        /* Sensor Status */
         .sensor-status-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -195,6 +213,11 @@
             background: #fef2f2;
         }
 
+        .sensor-status-card.warning {
+            border-left: 4px solid #f59e0b;
+            background: #fef3c7;
+        }
+
         .sensor-status-icon {
             font-size: 24px;
         }
@@ -216,7 +239,11 @@
             color: #ef4444;
         }
 
-        /* Two Column Layout - Stack on Mobile */
+        .warning-text {
+            color: #f59e0b;
+        }
+
+        /* Two Column Layout */
         .two-columns {
             display: flex;
             flex-direction: column;
@@ -244,12 +271,6 @@
             color: #1a202c;
         }
 
-        .section-header span {
-            font-size: 10px;
-            color: #a0aec0;
-        }
-
-        /* Sensor Card */
         .sensor-card {
             background: #f8fafc;
             border-radius: 12px;
@@ -284,7 +305,6 @@
         .temp-warning, .soil-warning, .humidity-warning { color: #f59e0b; }
         .temp-critical, .soil-critical, .humidity-critical { color: #ef4444; }
 
-        /* Chart */
         canvas {
             max-width: 100%;
             height: auto;
@@ -321,7 +341,7 @@
             50% { opacity: 0.7; }
         }
 
-        /* History & Alerts Cards */
+        /* History & Alerts */
         .history-card, .alerts-card {
             background: white;
             border-radius: 20px;
@@ -377,7 +397,7 @@
             font-size: 13px;
         }
 
-        /* How It Works - Mobile */
+        /* How It Works */
         .how-it-works {
             background: white;
             border-radius: 20px;
@@ -433,7 +453,6 @@
             color: #4a5568;
         }
 
-        /* Voice Toggle Button */
         .voice-toggle {
             position: fixed;
             bottom: 70px;
@@ -452,7 +471,6 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
-        /* Live Badge - Mobile */
         .live-badge-mobile {
             position: fixed;
             top: 15px;
@@ -482,16 +500,13 @@
             50% { opacity: 0.5; }
         }
 
-        /* Tablet and Desktop Styles */
         @media (min-width: 768px) {
             .app-container {
                 flex-direction: row;
             }
-            
             .bottom-nav {
                 display: none;
             }
-            
             .sidebar {
                 display: block;
                 width: 260px;
@@ -502,62 +517,47 @@
                 height: 100vh;
                 overflow-y: auto;
             }
-            
             .main-content {
                 margin-left: 260px;
                 padding: 20px 30px;
                 padding-bottom: 30px;
             }
-            
             .top-header {
                 flex-direction: row;
                 justify-content: space-between;
                 align-items: center;
             }
-            
             .stats-grid {
                 grid-template-columns: repeat(4, 1fr);
                 gap: 20px;
             }
-            
             .two-columns {
                 flex-direction: row;
                 gap: 25px;
             }
-            
-            .sensors-section, .chart-section {
-                flex: 1;
-            }
-            
             .features-grid {
                 flex-direction: row;
             }
-            
             .voice-toggle {
                 bottom: 20px;
                 right: 20px;
             }
-            
             .live-badge-mobile {
                 display: none;
             }
         }
 
-        /* Desktop Sidebar Styles */
         .sidebar .logo-area h2 {
             font-size: 20px;
             margin-bottom: 5px;
         }
-        
         .sidebar .logo-area span {
             font-size: 11px;
             opacity: 0.8;
         }
-        
         .sidebar .search-box {
             margin: 20px 0;
         }
-        
         .sidebar .search-box input {
             width: 100%;
             padding: 8px 12px;
@@ -567,17 +567,11 @@
             color: white;
             font-size: 13px;
         }
-        
-        .sidebar .search-box input::placeholder {
-            color: rgba(255,255,255,0.6);
-        }
-        
         .sidebar .nav-menu {
             display: flex;
             flex-direction: column;
             gap: 5px;
         }
-        
         .sidebar .nav-item {
             display: flex;
             align-items: center;
@@ -589,15 +583,9 @@
             transition: all 0.3s;
             cursor: pointer;
         }
-        
         .sidebar .nav-item:hover, .sidebar .nav-item.active {
             background: rgba(255,255,255,0.15);
         }
-        
-        .sidebar .nav-item .icon {
-            font-size: 18px;
-        }
-        
         .sidebar .live-badge {
             position: absolute;
             bottom: 20px;
@@ -615,7 +603,6 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Desktop Sidebar -->
         <aside class="sidebar">
             <div class="logo-area">
                 <h2>🌾 HINGA-TECH</h2>
@@ -632,27 +619,13 @@
             <div class="live-badge"><span class="live-dot"></span>LIVE(2s)</div>
         </aside>
 
-        <!-- Mobile Bottom Navigation -->
         <div class="bottom-nav">
-            <button class="nav-item active" onclick="showSection('dashboard')">
-                <span class="icon">🏠</span>
-                <span>Home</span>
-            </button>
-            <button class="nav-item" onclick="showSection('history')">
-                <span class="icon">📋</span>
-                <span>History</span>
-            </button>
-            <button class="nav-item" onclick="showSection('alerts')">
-                <span class="icon">🔔</span>
-                <span>Alerts</span>
-            </button>
+            <button class="nav-item active" onclick="showSection('dashboard')"><span class="icon">🏠</span><span>Home</span></button>
+            <button class="nav-item" onclick="showSection('history')"><span class="icon">📋</span><span>History</span></button>
+            <button class="nav-item" onclick="showSection('alerts')"><span class="icon">🔔</span><span>Alerts</span></button>
         </div>
 
-        <!-- Mobile Live Badge -->
-        <div class="live-badge-mobile">
-            <span class="live-dot"></span>
-            LIVE
-        </div>
+        <div class="live-badge-mobile"><span class="live-dot"></span>LIVE</div>
 
         <main class="main-content">
             <header class="top-header">
@@ -666,7 +639,15 @@
                 </div>
             </header>
 
-            <!-- Dashboard Section -->
+            <!-- DATA STALE WARNING - This appears when ESP8266 stops sending data -->
+            <div id="stale-warning" style="display:none;" class="data-stale-warning">
+                <span>⚠️</span>
+                <div>
+                    <strong id="stale-message">No data received for 15 seconds!</strong><br>
+                    <small id="stale-detail">ESP8266 may be disconnected or powered off. Please check the device.</small>
+                </div>
+            </div>
+
             <div id="dashboardSection">
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-icon">🌡️</div><div class="stat-info"><h3 id="avg-temp">--</h3><p>Average Temperature</p><small>Ideal: 15-35°C</small></div></div>
@@ -675,7 +656,6 @@
                     <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-info"><h3 id="total-readings">0</h3><p>Total Readings</p><small>All time</small></div></div>
                 </div>
 
-                <!-- Sensor Status -->
                 <div class="sensor-status-grid">
                     <div class="sensor-status-card online" id="dht22-status">
                         <div class="sensor-status-icon">🌡️</div>
@@ -698,7 +678,6 @@
                 </div>
             </div>
 
-            <!-- History Section -->
             <div id="historySection" style="display:none;">
                 <div class="history-card">
                     <div class="card-header"><h3>📜 Complete Event History</h3><button onclick="clearHistory()" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">Clear History</button></div>
@@ -706,7 +685,6 @@
                 </div>
             </div>
 
-            <!-- Alerts Section -->
             <div id="alertsSection" style="display:none;">
                 <div class="alerts-card">
                     <div class="card-header"><h3>🔔 All Alerts Log</h3><button onclick="clearAlerts()" style="background:#ef4444;color:white;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;">Clear Alerts</button></div>
@@ -738,37 +716,77 @@
         let alertHistory = [];
         let voiceEnabled = true;
         let lastAlertTime = {};
-        let sensorOfflineStart = { dht22: null, soil: null };
-        let lastKnownValues = { temp: null, humidity: null, soil: null };
+        let lastDataReceivedTime = Date.now();
+        let staleWarningShown = false;
+        let boardDisconnectAlertSent = false;
 
-        // Request notification permission on page load
+        // Request notification permission
         document.addEventListener('DOMContentLoaded', function() {
             if ("Notification" in window && Notification.permission === "default") {
                 Notification.requestPermission();
             }
         });
 
-        // Browser Notification Helper
         function showNotification(title, message, type = 'info') {
             if (!("Notification" in window)) return;
-            if (Notification.permission === "default") {
-                Notification.requestPermission();
-            }
+            if (Notification.permission === "default") Notification.requestPermission();
             if (Notification.permission === "granted") {
-                new Notification(title, {
-                    body: message,
-                    icon: 'https://emojicdn.elk.sh/🌾',
-                    silent: false
-                });
+                new Notification(title, { body: message, icon: 'https://emojicdn.elk.sh/🌾', silent: false });
             }
         }
 
-        // Enhanced Sensor Health Check with Farmer Notifications
+        // Check if data is stale (no new data for 15 seconds)
+        function checkDataStaleness() {
+            const timeSinceLastData = (Date.now() - lastDataReceivedTime) / 1000;
+            const staleWarningDiv = document.getElementById('stale-warning');
+            const connectionStatus = document.getElementById('connection-status');
+            
+            if (timeSinceLastData > 15) {
+                // Data is stale - ESP8266 is not sending
+                if (!staleWarningShown) {
+                    staleWarningShown = true;
+                    const message = `⚠️ NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS! ESP8266 may be disconnected.`;
+                    addHistoryEvent(`🚨 CRITICAL: No data received for ${Math.floor(timeSinceLastData)} seconds - ESP8266 may be offline!`);
+                    addAlert(`⚠️⚠️⚠️ ESP8266 IS NOT RESPONDING! Last data received ${Math.floor(timeSinceLastData)} seconds ago. Please check:
+1. USB cable connection
+2. Power supply
+3. Wi-Fi connection`, 'critical');
+                    showNotification('🚨 DEVICE DISCONNECTED!', `No data for ${Math.floor(timeSinceLastData)} seconds. Check ESP8266!`, 'error');
+                    
+                    // Update connection status
+                    connectionStatus.className = 'status-badge offline';
+                    connectionStatus.innerHTML = '● DEVICE OFFLINE';
+                }
+                
+                staleWarningDiv.style.display = 'flex';
+                const staleMessage = document.getElementById('stale-message');
+                const staleDetail = document.getElementById('stale-detail');
+                staleMessage.innerHTML = `⚠️ NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS!`;
+                staleDetail.innerHTML = `ESP8266 is not responding. Please check: USB cable, power supply, or Wi-Fi connection.`;
+                
+                if (timeSinceLastData > 30) {
+                    staleWarningDiv.classList.add('critical');
+                    connectionStatus.className = 'status-badge offline';
+                    connectionStatus.innerHTML = '● DEVICE OFFLINE';
+                }
+            } else {
+                if (staleWarningShown) {
+                    staleWarningShown = false;
+                    addHistoryEvent('✅ ESP8266 is back online - Data receiving恢复正常');
+                    addAlert('✅ ESP8266 device is back online and sending data', 'info');
+                    showNotification('✅ Device Reconnected', 'ESP8266 is now sending data again!', 'success');
+                }
+                staleWarningDiv.style.display = 'none';
+                staleWarningDiv.classList.remove('critical');
+                connectionStatus.className = 'status-badge online';
+                connectionStatus.innerHTML = '● Online';
+            }
+        }
+
         function checkSensorHealth(readings) {
             let now = Date.now();
             let hasValidData = readings.length > 0 && readings[0];
             
-            // Check DHT22 (Temperature/Humidity Sensor)
             if (hasValidData && readings[0].temperature && readings[0].humidity) {
                 if (sensorOfflineStart.dht22 !== null) {
                     addHistoryEvent('✅ DHT22 sensor is back online');
@@ -786,14 +804,12 @@
                     addHistoryEvent('⚠️ CRITICAL: DHT22 sensor stopped responding!');
                     addAlert(message, 'critical');
                     showNotification('⚠️ SENSOR FAILURE!', 'DHT22 Temperature sensor is not responding. Check the wiring!', 'error');
-                    console.error('DHT22 Sensor Failure detected at:', new Date().toLocaleString());
                 }
                 document.getElementById('dht22-status').className = 'sensor-status-card offline';
                 document.getElementById('dht22-status-text').innerHTML = '● OFFLINE - Not Responding!';
                 document.getElementById('dht22-status-text').className = 'offline-text';
             }
             
-            // Check Soil Moisture Sensor
             if (hasValidData && readings[0].soil_moisture !== undefined && readings[0].soil_moisture >= 0) {
                 if (sensorOfflineStart.soil !== null) {
                     addHistoryEvent('✅ Soil moisture sensor is back online');
@@ -811,26 +827,15 @@
                     addHistoryEvent('⚠️ CRITICAL: Soil moisture sensor stopped responding!');
                     addAlert(message, 'critical');
                     showNotification('⚠️ SENSOR FAILURE!', 'Soil moisture sensor is not responding. Check the wiring!', 'error');
-                    console.error('Soil Sensor Failure detected at:', new Date().toLocaleString());
                 }
                 document.getElementById('soil-status').className = 'sensor-status-card offline';
                 document.getElementById('soil-status-text').innerHTML = '● OFFLINE - Not Responding!';
                 document.getElementById('soil-status-text').className = 'offline-text';
             }
-            
-            // Check if BOTH sensors are offline (possible board disconnect)
-            if (sensorOfflineStart.dht22 !== null && sensorOfflineStart.soil !== null) {
-                if (!window.boardDisconnectNotified) {
-                    window.boardDisconnectNotified = true;
-                    let boardMessage = '⚠️⚠️⚠️ ESP8266 BOARD MAY BE DISCONNECTED! Both sensors are not responding. Check power and connection.';
-                    addHistoryEvent('🚨 CRITICAL: Both sensors offline - Board may be disconnected!');
-                    addAlert(boardMessage, 'critical');
-                    showNotification('🚨 BOARD DISCONNECTED!', 'ESP8266 board is not responding. Check USB connection and power!', 'error');
-                }
-            } else {
-                window.boardDisconnectNotified = false;
-            }
         }
+
+        let sensorOfflineStart = { dht22: null, soil: null };
+        let lastKnownValues = { temp: null, humidity: null, soil: null };
 
         function loadHistory() {
             let savedHistory = localStorage.getItem('hingatech_history');
@@ -973,45 +978,28 @@
             }
             
             if (soilMoisture < 30) {
-                advice += `💧 URGENT: Soil moisture is LOW (${soilMoisture}%)! `;
-                advice += `🌊 IRRIGATION NEEDED IMMEDIATELY! Water your crops now.`;
+                advice += `💧 URGENT: Soil moisture is LOW (${soilMoisture}%)! IRRIGATION NEEDED IMMEDIATELY!`;
                 isUrgent = true;
                 if (!lastAlertTime.lowSoil || Date.now() - lastAlertTime.lowSoil > 600000) {
                     addAlert(`💧 IRRIGATION ALERT: Soil moisture is ${soilMoisture}%! Please irrigate your crops immediately.`, 'critical');
                     lastAlertTime.lowSoil = Date.now();
                 }
             } else if (soilMoisture < 45) {
-                advice += `⚠️ Soil moisture is ${soilMoisture}% (low side). `;
-                advice += `🌊 Consider irrigating within the next 6-12 hours.`;
+                advice += `⚠️ Soil moisture is ${soilMoisture}% (low side). Consider irrigating soon.`;
                 if (!lastAlertTime.medLowSoil || Date.now() - lastAlertTime.medLowSoil > 3600000) {
                     addAlert(`💧 Irrigation reminder: Soil moisture is ${soilMoisture}%. Plan to water soon.`, 'warning');
                     lastAlertTime.medLowSoil = Date.now();
                 }
             } else if (soilMoisture > 70) {
-                advice += `✅ Soil moisture is ${soilMoisture}% (good). `;
-                advice += `💧 WAIT before irrigating to prevent over-watering.`;
-                if (soilMoisture > 85 && (!lastAlertTime.highSoil || Date.now() - lastAlertTime.highSoil > 3600000)) {
-                    addAlert(`🌊 HIGH SOIL MOISTURE: ${soilMoisture}%! Reduce irrigation to prevent root rot.`, 'warning');
-                    lastAlertTime.highSoil = Date.now();
-                }
+                advice += `✅ Soil moisture is ${soilMoisture}% (good). WAIT before irrigating.`;
             } else {
-                advice += `✅ Soil conditions are OPTIMAL (${soilMoisture}%). `;
-                advice += `💧 Maintain current irrigation schedule.`;
-            }
-            
-            if (humidity < 40) {
-                advice += ` 💨 Low humidity (${humidity}%) may increase evaporation.`;
-            } else if (humidity > 80) {
-                advice += ` 💨 High humidity (${humidity}%) - watch for fungal diseases.`;
+                advice += `✅ Soil conditions are OPTIMAL (${soilMoisture}%). Maintain current schedule.`;
             }
             
             const adviceDiv = document.getElementById('advice-container');
             adviceDiv.innerHTML = advice;
-            if (isUrgent) {
-                adviceDiv.classList.add('irrigation-urgent');
-            } else {
-                adviceDiv.classList.remove('irrigation-urgent');
-            }
+            if (isUrgent) adviceDiv.classList.add('irrigation-urgent');
+            else adviceDiv.classList.remove('irrigation-urgent');
         }
 
         function createSensorCard(reading) {
@@ -1068,8 +1056,10 @@
                 let response = await fetch(API_URL + "/api/sensor/latest");
                 if (!response.ok) throw new Error();
                 let readings = await response.json();
-                document.getElementById('connection-status').className = 'status-badge online';
-                document.getElementById('connection-status').innerHTML = '● Online';
+                
+                // Update last data received time
+                lastDataReceivedTime = Date.now();
+                
                 document.getElementById('last-updated').innerHTML = 'Last updated: ' + new Date().toLocaleTimeString();
                 
                 let container = document.getElementById('cards-container');
@@ -1077,7 +1067,6 @@
                     container.innerHTML = '<div class="no-data">📡 Waiting for sensor data from ESP8266...</div>';
                 } else {
                     container.innerHTML = readings.map(createSensorCard).join('');
-                    
                     let latest = readings[0];
                     if (lastKnownValues.temp !== null) {
                         if (latest.temperature > 35 && lastKnownValues.temp <= 35) addHistoryEvent(`🌡️ Temperature exceeded 35°C (${latest.temperature}°C)`);
@@ -1086,7 +1075,6 @@
                         if (latest.soil_moisture > 70 && lastKnownValues.soil <= 70) addHistoryEvent(`💧 Soil moisture exceeded 70% (${latest.soil_moisture}%)`);
                     }
                     lastKnownValues = { temp: latest.temperature, humidity: latest.humidity, soil: latest.soil_moisture };
-                    
                     updateIrrigationAdvice(latest.temperature, latest.humidity, latest.soil_moisture);
                 }
                 
@@ -1097,22 +1085,14 @@
                 updateAlertsDisplay();
                 
             } catch(e) {
-                document.getElementById('connection-status').className = 'status-badge offline';
-                document.getElementById('connection-status').innerHTML = '● Offline';
+                console.error('Fetch error:', e);
             }
         }
 
-        document.getElementById('searchInput')?.addEventListener('input', function(e) {
-            let searchTerm = e.target.value.toLowerCase();
-            let items = document.querySelectorAll('.history-item, .alert-item');
-            items.forEach(item => {
-                if (item.innerText.toLowerCase().includes(searchTerm)) item.style.display = 'block';
-                else item.style.display = 'none';
-            });
-        });
-
+        // Run stale check every second
+        setInterval(checkDataStaleness, 1000);
+        setInterval(fetchData, 3000);
         loadHistory();
-        setInterval(fetchData, 2000);
         fetchData();
     </script>
 </body>
