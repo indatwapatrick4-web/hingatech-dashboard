@@ -720,14 +720,20 @@
         let alertHistory = [];
         let voiceEnabled = true;
         let lastAlertTime = {};
-        let lastDataReceivedTime = Date.now();
         
-        // Sensor status variables
-        let dht22Working = true;
-        let soilWorking = true;
-        let lastValidDHT22 = { temp: null, humidity: null, lastSeen: Date.now() };
-        let lastValidSoil = { moisture: null, lastSeen: Date.now() };
-        let lastKnownValues = { temp: null, humidity: null, soil: null };
+        // Track if board is actually sending data
+        let lastSuccessfulFetch = Date.now();
+        let isBoardConnected = true;
+        let boardDisconnectAlertSent = false;
+        
+        // Track last known GOOD values (not -999)
+        let lastGoodDHT22 = { temp: null, humidity: null, lastSeen: null };
+        let lastGoodSoil = { moisture: null, lastSeen: null };
+        
+        // Current sensor status based on ACTUAL new data
+        let dht22CurrentlyWorking = false;
+        let soilCurrentlyWorking = false;
+        let lastValidDataReceived = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             if ("Notification" in window && Notification.permission === "default") {
@@ -742,29 +748,42 @@
             }
         }
 
-        // ========== COMPLETE SENSOR HEALTH FUNCTION ==========
-        function updateSensorHealth(readings) {
+        // THIS IS THE KEY FIX - Only update sensor status based on NEW data
+        function updateSensorStatusFromNewData(latestReading) {
             const now = Date.now();
-            let hasValidData = readings.length > 0 && readings[0];
-            let latest = hasValidData ? readings[0] : null;
             
-            // Check DHT22 Sensor - look for -999 value or missing data
-            let dhtOnline = false;
-            if (latest && latest.temperature !== undefined && latest.temperature !== -999 && 
-                latest.humidity !== undefined && latest.humidity !== -999) {
-                dhtOnline = true;
-                lastValidDHT22 = { 
-                    temp: latest.temperature, 
-                    humidity: latest.humidity, 
-                    lastSeen: now 
-                };
+            // Check if we have a valid reading (not -999)
+            let dhtHasValidData = false;
+            let soilHasValidData = false;
+            
+            if (latestReading) {
+                // Check DHT22 - valid if not -999
+                if (latestReading.temperature !== undefined && latestReading.temperature !== -999 &&
+                    latestReading.humidity !== undefined && latestReading.humidity !== -999) {
+                    dhtHasValidData = true;
+                    lastGoodDHT22 = {
+                        temp: latestReading.temperature,
+                        humidity: latestReading.humidity,
+                        lastSeen: now
+                    };
+                }
+                
+                // Check Soil - valid if not -999
+                if (latestReading.soil_moisture !== undefined && latestReading.soil_moisture !== -999 &&
+                    latestReading.soil_moisture >= 0 && latestReading.soil_moisture <= 100) {
+                    soilHasValidData = true;
+                    lastGoodSoil = {
+                        moisture: latestReading.soil_moisture,
+                        lastSeen: now
+                    };
+                }
             }
             
-            // Update DHT22 UI
-            if (dhtOnline) {
-                if (!dht22Working) {
-                    dht22Working = true;
-                    addHistoryEvent('✅ DHT22 sensor is back online');
+            // Update DHT22 UI based ONLY on current data
+            if (dhtHasValidData) {
+                if (!dht22CurrentlyWorking) {
+                    dht22CurrentlyWorking = true;
+                    addHistoryEvent('✅ DHT22 sensor is back online (new data received)');
                     addAlert('✅ DHT22 sensor has recovered and is now working normally', 'info');
                     showNotification('DHT22 Sensor Recovered', 'The temperature sensor is working again!', 'success');
                 }
@@ -772,11 +791,10 @@
                 document.getElementById('dht22-status-text').innerHTML = '● Online';
                 document.getElementById('dht22-status-text').className = 'online-text';
             } else {
-                if (dht22Working) {
-                    dht22Working = false;
-                    let message = '⚠️ DHT22 TEMPERATURE SENSOR IS NOT RESPONDING! Please check the wiring.';
-                    addHistoryEvent('⚠️ CRITICAL: DHT22 sensor stopped responding!');
-                    addAlert(message, 'critical');
+                if (dht22CurrentlyWorking) {
+                    dht22CurrentlyWorking = false;
+                    addHistoryEvent('⚠️ DHT22 sensor stopped responding (no valid data)');
+                    addAlert('⚠️ DHT22 TEMPERATURE SENSOR IS NOT RESPONDING! Please check the wiring.', 'critical');
                     showNotification('⚠️ SENSOR FAILURE!', 'DHT22 Temperature sensor is not responding. Check the wiring!', 'error');
                 }
                 document.getElementById('dht22-status').className = 'sensor-status-card offline';
@@ -784,22 +802,11 @@
                 document.getElementById('dht22-status-text').className = 'offline-text';
             }
             
-            // Check Soil Sensor - look for -999 value
-            let soilOnline = false;
-            if (latest && latest.soil_moisture !== undefined && latest.soil_moisture !== -999 && 
-                latest.soil_moisture >= 0 && latest.soil_moisture <= 100) {
-                soilOnline = true;
-                lastValidSoil = { 
-                    moisture: latest.soil_moisture, 
-                    lastSeen: now 
-                };
-            }
-            
-            // Update Soil UI
-            if (soilOnline) {
-                if (!soilWorking) {
-                    soilWorking = true;
-                    addHistoryEvent('✅ Soil moisture sensor is back online');
+            // Update Soil UI based ONLY on current data
+            if (soilHasValidData) {
+                if (!soilCurrentlyWorking) {
+                    soilCurrentlyWorking = true;
+                    addHistoryEvent('✅ Soil moisture sensor is back online (new data received)');
                     addAlert('✅ Soil moisture sensor has recovered and is now working normally', 'info');
                     showNotification('Soil Sensor Recovered', 'The soil moisture sensor is working again!', 'success');
                 }
@@ -807,11 +814,10 @@
                 document.getElementById('soil-status-text').innerHTML = '● Online';
                 document.getElementById('soil-status-text').className = 'online-text';
             } else {
-                if (soilWorking) {
-                    soilWorking = false;
-                    let message = '⚠️ SOIL MOISTURE SENSOR IS NOT RESPONDING! Please check the wiring.';
-                    addHistoryEvent('⚠️ CRITICAL: Soil moisture sensor stopped responding!');
-                    addAlert(message, 'critical');
+                if (soilCurrentlyWorking) {
+                    soilCurrentlyWorking = false;
+                    addHistoryEvent('⚠️ Soil moisture sensor stopped responding (no valid data)');
+                    addAlert('⚠️ SOIL MOISTURE SENSOR IS NOT RESPONDING! Please check the wiring.', 'critical');
                     showNotification('⚠️ SENSOR FAILURE!', 'Soil moisture sensor is not responding. Check the wiring!', 'error');
                 }
                 document.getElementById('soil-status').className = 'sensor-status-card offline';
@@ -819,57 +825,61 @@
                 document.getElementById('soil-status-text').className = 'offline-text';
             }
             
-            // Check if BOTH sensors are offline (possible board disconnect)
-            if (!dht22Working && !soilWorking) {
-                if (!window.boardDisconnectNotified) {
-                    window.boardDisconnectNotified = true;
-                    let boardMessage = '⚠️⚠️⚠️ ESP8266 BOARD MAY BE DISCONNECTED! Both sensors are not responding. Check power and connection.';
-                    addHistoryEvent('🚨 CRITICAL: Both sensors offline - Board may be disconnected!');
-                    addAlert(boardMessage, 'critical');
-                    showNotification('🚨 BOARD DISCONNECTED!', 'ESP8266 board is not responding. Check USB connection and power!', 'error');
+            // Check if board is completely disconnected (no valid data from ANY sensor)
+            if (!dhtHasValidData && !soilHasValidData) {
+                if (isBoardConnected) {
+                    isBoardConnected = false;
+                    if (!boardDisconnectAlertSent) {
+                        boardDisconnectAlertSent = true;
+                        addHistoryEvent('🚨 CRITICAL: ESP8266 board is not sending valid data!');
+                        addAlert('⚠️⚠️⚠️ ESP8266 BOARD IS NOT RESPONDING! Please check USB cable, power supply, and Wi-Fi connection.', 'critical');
+                        showNotification('🚨 BOARD DISCONNECTED!', 'ESP8266 is not sending valid data. Check connection!', 'error');
+                    }
                 }
             } else {
-                window.boardDisconnectNotified = false;
+                if (!isBoardConnected) {
+                    isBoardConnected = true;
+                    boardDisconnectAlertSent = false;
+                    addHistoryEvent('✅ ESP8266 board is back online (valid data received)');
+                    addAlert('✅ ESP8266 device is back online and sending valid data', 'info');
+                    showNotification('✅ Device Reconnected', 'ESP8266 is now sending data again!', 'success');
+                }
             }
         }
 
         function checkDataStaleness() {
-            const timeSinceLastData = (Date.now() - lastDataReceivedTime) / 1000;
+            const timeSinceLastFetch = (Date.now() - lastSuccessfulFetch) / 1000;
             const staleWarningDiv = document.getElementById('stale-warning');
             const connectionStatus = document.getElementById('connection-status');
             
-            if (timeSinceLastData > 10) {
+            if (timeSinceLastFetch > 10) {
                 if (!window.criticalAlertSent) {
                     window.criticalAlertSent = true;
-                    addHistoryEvent(`🚨 CRITICAL: No data received for ${Math.floor(timeSinceLastData)} seconds - ESP8266 is offline!`);
-                    addAlert(`⚠️⚠️⚠️ ESP8266 IS NOT RESPONDING! Last data received ${Math.floor(timeSinceLastData)} seconds ago. Check USB cable, power supply, and Wi-Fi.`, 'critical');
+                    addHistoryEvent(`🚨 CRITICAL: No API response for ${Math.floor(timeSinceLastFetch)} seconds`);
+                    addAlert(`⚠️⚠️⚠️ BACKEND API IS NOT RESPONDING! Last successful fetch ${Math.floor(timeSinceLastFetch)} seconds ago.`, 'critical');
                 }
                 staleWarningDiv.style.display = 'flex';
                 staleWarningDiv.className = 'data-stale-warning critical';
-                document.getElementById('stale-message').innerHTML = `🚨 CRITICAL: NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS!`;
-                document.getElementById('stale-detail').innerHTML = `ESP8266 IS DISCONNECTED! Please check USB cable, power supply, and Wi-Fi immediately.`;
+                document.getElementById('stale-message').innerHTML = `🚨 CRITICAL: NO DATA FOR ${Math.floor(timeSinceLastFetch)} SECONDS!`;
+                document.getElementById('stale-detail').innerHTML = `ESP8266 may be disconnected or API is down. Please check the device.`;
                 connectionStatus.className = 'status-badge offline';
                 connectionStatus.innerHTML = '● DEVICE OFFLINE';
-            } else if (timeSinceLastData > 5) {
+            } else if (timeSinceLastFetch > 5) {
                 staleWarningDiv.style.display = 'flex';
                 staleWarningDiv.className = 'data-stale-warning';
-                document.getElementById('stale-message').innerHTML = `⚠️ WARNING: NO DATA FOR ${Math.floor(timeSinceLastData)} SECONDS!`;
-                document.getElementById('stale-detail').innerHTML = `ESP8266 is not responding. Checking connection...`;
+                document.getElementById('stale-message').innerHTML = `⚠️ WARNING: NO DATA FOR ${Math.floor(timeSinceLastFetch)} SECONDS!`;
+                document.getElementById('stale-detail').innerHTML = `Waiting for ESP8266 to send data...`;
                 connectionStatus.className = 'status-badge offline';
                 connectionStatus.innerHTML = '⚠️ NO DATA';
                 window.criticalAlertSent = false;
             } else {
                 if (staleWarningDiv.style.display === 'flex') {
                     staleWarningDiv.style.display = 'none';
-                    if (!window.reconnectNotified) {
-                        window.reconnectNotified = true;
-                        addHistoryEvent('✅ ESP8266 is back online - Data receiving恢复正常');
-                        addAlert('✅ ESP8266 device is back online and sending data', 'info');
-                        setTimeout(() => { window.reconnectNotified = false; }, 10000);
-                    }
                 }
-                connectionStatus.className = 'status-badge online';
-                connectionStatus.innerHTML = '● Online';
+                if (isBoardConnected) {
+                    connectionStatus.className = 'status-badge online';
+                    connectionStatus.innerHTML = '● Online';
+                }
                 window.criticalAlertSent = false;
             }
         }
@@ -990,7 +1000,7 @@
 
         function updateIrrigationAdvice(temp, humidity, soilMoisture) {
             if (temp === -999 || humidity === -999 || soilMoisture === -999) {
-                document.getElementById('advice-container').innerHTML = '⚠️ Sensor failure detected. Please check sensor connections.';
+                document.getElementById('advice-container').innerHTML = '⚠️ Waiting for valid sensor data...';
                 return;
             }
             
@@ -1037,13 +1047,13 @@
         }
 
         function createSensorCard(reading) {
-            let tempDisplay = reading.temperature === -999 ? 'OFFLINE' : reading.temperature.toFixed(1) + '°C';
-            let humDisplay = reading.humidity === -999 ? 'OFFLINE' : reading.humidity.toFixed(1) + '%';
-            let soilDisplay = reading.soil_moisture === -999 ? 'OFFLINE' : reading.soil_moisture + '%';
+            let tempDisplay = (reading.temperature === -999 || !reading.temperature) ? 'OFFLINE' : reading.temperature.toFixed(1) + '°C';
+            let humDisplay = (reading.humidity === -999 || !reading.humidity) ? 'OFFLINE' : reading.humidity.toFixed(1) + '%';
+            let soilDisplay = (reading.soil_moisture === -999 || reading.soil_moisture === undefined) ? 'OFFLINE' : reading.soil_moisture + '%';
             
-            let tempClass = reading.temperature === -999 ? 'critical' : getClass('temp', reading.temperature);
-            let humClass = reading.humidity === -999 ? 'critical' : getClass('hum', reading.humidity);
-            let soilClass = reading.soil_moisture === -999 ? 'critical' : getClass('soil', reading.soil_moisture);
+            let tempClass = (reading.temperature === -999 || !reading.temperature) ? 'critical' : getClass('temp', reading.temperature);
+            let humClass = (reading.humidity === -999 || !reading.humidity) ? 'critical' : getClass('hum', reading.humidity);
+            let soilClass = (reading.soil_moisture === -999 || reading.soil_moisture === undefined) ? 'critical' : getClass('soil', reading.soil_moisture);
             
             return `
                 <div class="sensor-card">
@@ -1106,30 +1116,28 @@
                 if (!response.ok) throw new Error();
                 let readings = await response.json();
                 
-                lastDataReceivedTime = Date.now();
+                lastSuccessfulFetch = Date.now();
                 document.getElementById('last-updated').innerHTML = 'Last updated: ' + new Date().toLocaleTimeString();
                 
                 let container = document.getElementById('cards-container');
                 if (readings.length === 0) {
                     container.innerHTML = '<div class="no-data">📡 Waiting for sensor data from ESP8266...</div>';
+                    // No data means board is not sending
+                    updateSensorStatusFromNewData(null);
                 } else {
                     container.innerHTML = readings.map(createSensorCard).join('');
                     let latest = readings[0];
                     
-                    if (lastKnownValues.temp !== null && latest.temperature !== -999 && lastKnownValues.temp !== -999) {
-                        if (latest.temperature > 35 && lastKnownValues.temp <= 35) addHistoryEvent(`🌡️ Temperature exceeded 35°C (${latest.temperature}°C)`);
-                        if (latest.temperature < 15 && lastKnownValues.temp >= 15) addHistoryEvent(`❄️ Temperature dropped below 15°C (${latest.temperature}°C)`);
-                        if (latest.soil_moisture < 30 && lastKnownValues.soil >= 30 && latest.soil_moisture !== -999) addHistoryEvent(`💧 Soil moisture dropped below 30% (${latest.soil_moisture}%) - Irrigation needed`);
-                        if (latest.soil_moisture > 70 && lastKnownValues.soil <= 70 && latest.soil_moisture !== -999) addHistoryEvent(`💧 Soil moisture exceeded 70% (${latest.soil_moisture}%)`);
-                    }
-                    lastKnownValues = { temp: latest.temperature, humidity: latest.humidity, soil: latest.soil_moisture };
+                    // Update sensor status based on ACTUAL new data
+                    updateSensorStatusFromNewData(latest);
                     
                     if (latest.temperature !== -999 && latest.humidity !== -999 && latest.soil_moisture !== -999) {
                         updateIrrigationAdvice(latest.temperature, latest.humidity, latest.soil_moisture);
+                    } else {
+                        document.getElementById('advice-container').innerHTML = '⚠️ Waiting for valid sensor data...';
                     }
                 }
                 
-                updateSensorHealth(readings);
                 updateStats(readings);
                 await updateChart();
                 updateHistoryDisplay();
@@ -1137,7 +1145,8 @@
                 
             } catch(e) {
                 console.error('Fetch error:', e);
-                updateSensorHealth([]);
+                lastSuccessfulFetch = Date.now() - 60000; // Mark as stale
+                updateSensorStatusFromNewData(null);
             }
         }
 
@@ -1151,7 +1160,7 @@
         });
 
         setInterval(checkDataStaleness, 1000);
-        setInterval(fetchData, 2000);
+        setInterval(fetchData, 3000);
         loadHistory();
         fetchData();
     </script>
