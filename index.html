@@ -208,6 +208,14 @@
             font-size: 10px;
         }
 
+        .online-text {
+            color: #10b981;
+        }
+
+        .offline-text {
+            color: #ef4444;
+        }
+
         /* Two Column Layout - Stack on Mobile */
         .two-columns {
             display: flex;
@@ -733,6 +741,97 @@
         let sensorOfflineStart = { dht22: null, soil: null };
         let lastKnownValues = { temp: null, humidity: null, soil: null };
 
+        // Request notification permission on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        });
+
+        // Browser Notification Helper
+        function showNotification(title, message, type = 'info') {
+            if (!("Notification" in window)) return;
+            if (Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+            if (Notification.permission === "granted") {
+                new Notification(title, {
+                    body: message,
+                    icon: 'https://emojicdn.elk.sh/🌾',
+                    silent: false
+                });
+            }
+        }
+
+        // Enhanced Sensor Health Check with Farmer Notifications
+        function checkSensorHealth(readings) {
+            let now = Date.now();
+            let hasValidData = readings.length > 0 && readings[0];
+            
+            // Check DHT22 (Temperature/Humidity Sensor)
+            if (hasValidData && readings[0].temperature && readings[0].humidity) {
+                if (sensorOfflineStart.dht22 !== null) {
+                    addHistoryEvent('✅ DHT22 sensor is back online');
+                    addAlert('✅ DHT22 sensor has recovered and is now working normally', 'info');
+                    showNotification('DHT22 Sensor Recovered', 'The temperature sensor is working again!', 'success');
+                    sensorOfflineStart.dht22 = null;
+                }
+                document.getElementById('dht22-status').className = 'sensor-status-card online';
+                document.getElementById('dht22-status-text').innerHTML = '● Online';
+                document.getElementById('dht22-status-text').className = 'online-text';
+            } else {
+                if (sensorOfflineStart.dht22 === null) {
+                    sensorOfflineStart.dht22 = now;
+                    let message = '⚠️ DHT22 TEMPERATURE SENSOR IS NOT RESPONDING! Please check the wiring.';
+                    addHistoryEvent('⚠️ CRITICAL: DHT22 sensor stopped responding!');
+                    addAlert(message, 'critical');
+                    showNotification('⚠️ SENSOR FAILURE!', 'DHT22 Temperature sensor is not responding. Check the wiring!', 'error');
+                    console.error('DHT22 Sensor Failure detected at:', new Date().toLocaleString());
+                }
+                document.getElementById('dht22-status').className = 'sensor-status-card offline';
+                document.getElementById('dht22-status-text').innerHTML = '● OFFLINE - Not Responding!';
+                document.getElementById('dht22-status-text').className = 'offline-text';
+            }
+            
+            // Check Soil Moisture Sensor
+            if (hasValidData && readings[0].soil_moisture !== undefined && readings[0].soil_moisture >= 0) {
+                if (sensorOfflineStart.soil !== null) {
+                    addHistoryEvent('✅ Soil moisture sensor is back online');
+                    addAlert('✅ Soil moisture sensor has recovered', 'info');
+                    showNotification('Soil Sensor Recovered', 'The soil moisture sensor is working again!', 'success');
+                    sensorOfflineStart.soil = null;
+                }
+                document.getElementById('soil-status').className = 'sensor-status-card online';
+                document.getElementById('soil-status-text').innerHTML = '● Online';
+                document.getElementById('soil-status-text').className = 'online-text';
+            } else {
+                if (sensorOfflineStart.soil === null) {
+                    sensorOfflineStart.soil = now;
+                    let message = '⚠️ SOIL MOISTURE SENSOR IS NOT RESPONDING! Please check the wiring.';
+                    addHistoryEvent('⚠️ CRITICAL: Soil moisture sensor stopped responding!');
+                    addAlert(message, 'critical');
+                    showNotification('⚠️ SENSOR FAILURE!', 'Soil moisture sensor is not responding. Check the wiring!', 'error');
+                    console.error('Soil Sensor Failure detected at:', new Date().toLocaleString());
+                }
+                document.getElementById('soil-status').className = 'sensor-status-card offline';
+                document.getElementById('soil-status-text').innerHTML = '● OFFLINE - Not Responding!';
+                document.getElementById('soil-status-text').className = 'offline-text';
+            }
+            
+            // Check if BOTH sensors are offline (possible board disconnect)
+            if (sensorOfflineStart.dht22 !== null && sensorOfflineStart.soil !== null) {
+                if (!window.boardDisconnectNotified) {
+                    window.boardDisconnectNotified = true;
+                    let boardMessage = '⚠️⚠️⚠️ ESP8266 BOARD MAY BE DISCONNECTED! Both sensors are not responding. Check power and connection.';
+                    addHistoryEvent('🚨 CRITICAL: Both sensors offline - Board may be disconnected!');
+                    addAlert(boardMessage, 'critical');
+                    showNotification('🚨 BOARD DISCONNECTED!', 'ESP8266 board is not responding. Check USB connection and power!', 'error');
+                }
+            } else {
+                window.boardDisconnectNotified = false;
+            }
+        }
+
         function loadHistory() {
             let savedHistory = localStorage.getItem('hingatech_history');
             if (savedHistory) eventHistory = JSON.parse(savedHistory);
@@ -813,7 +912,6 @@
             document.getElementById('historySection').style.display = section === 'history' ? 'block' : 'none';
             document.getElementById('alertsSection').style.display = section === 'alerts' ? 'block' : 'none';
             
-            // Update active state on both desktop and mobile nav
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
@@ -854,51 +952,6 @@
                 return 'normal';
             }
             return 'normal';
-        }
-
-        function checkSensorHealth(readings) {
-            let now = Date.now();
-            let hasValidData = readings.length > 0 && readings[0];
-            
-            if (hasValidData && readings[0].temperature && readings[0].humidity) {
-                if (sensorOfflineStart.dht22 !== null) {
-                    addHistoryEvent('✅ DHT22 sensor is back online');
-                    addAlert('DHT22 sensor has recovered and is now working normally', 'info');
-                    sensorOfflineStart.dht22 = null;
-                }
-                document.getElementById('dht22-status').className = 'sensor-status-card online';
-                document.getElementById('dht22-status-text').innerHTML = '● Online';
-                document.getElementById('dht22-status-text').className = 'online-text';
-            } else {
-                if (sensorOfflineStart.dht22 === null) {
-                    sensorOfflineStart.dht22 = now;
-                    addHistoryEvent('⚠️ WARNING: DHT22 sensor stopped responding!');
-                    addAlert('⚠️ DHT22 TEMPERATURE SENSOR IS NOT RESPONDING! Please check the wiring.', 'critical');
-                }
-                document.getElementById('dht22-status').className = 'sensor-status-card offline';
-                document.getElementById('dht22-status-text').innerHTML = '● OFFLINE - Not Responding!';
-                document.getElementById('dht22-status-text').className = 'offline-text';
-            }
-            
-            if (hasValidData && readings[0].soil_moisture !== undefined) {
-                if (sensorOfflineStart.soil !== null) {
-                    addHistoryEvent('✅ Soil moisture sensor is back online');
-                    addAlert('Soil moisture sensor has recovered', 'info');
-                    sensorOfflineStart.soil = null;
-                }
-                document.getElementById('soil-status').className = 'sensor-status-card online';
-                document.getElementById('soil-status-text').innerHTML = '● Online';
-                document.getElementById('soil-status-text').className = 'online-text';
-            } else {
-                if (sensorOfflineStart.soil === null) {
-                    sensorOfflineStart.soil = now;
-                    addHistoryEvent('⚠️ WARNING: Soil moisture sensor stopped responding!');
-                    addAlert('⚠️ SOIL MOISTURE SENSOR IS NOT RESPONDING! Please check the wiring.', 'critical');
-                }
-                document.getElementById('soil-status').className = 'sensor-status-card offline';
-                document.getElementById('soil-status-text').innerHTML = '● OFFLINE - Not Responding!';
-                document.getElementById('soil-status-text').className = 'offline-text';
-            }
         }
 
         function updateIrrigationAdvice(temp, humidity, soilMoisture) {
